@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-gecotex-bg text-gecotex-ink;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gecotex-navy text-white px-4 py-2 rounded-lg font-semibold hover:bg-gecotex-navy-dark transition-all shadow-[0_6px_16px_rgba(31,56,100,0.2)] disabled:opacity-50 disabled:cursor-not-allowed text-sm tracking-wide;
+  }
+  .btn-secondary {
+    @apply bg-white text-gecotex-ink border border-gecotex-border px-4 py-2 rounded-lg font-semibold hover:bg-gecotex-bg transition-colors text-sm;
+  }
+  .btn-blue {
+    @apply bg-gecotex-blue text-white px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition-all shadow-sm text-sm;
+  }
+  .btn-danger {
+    @apply bg-white text-gecotex-red border border-[#EFC9C4] px-4 py-2 rounded-lg font-semibold hover:bg-gecotex-red-soft transition-colors text-sm;
+  }
+  .btn-soft {
+    @apply bg-gecotex-bg text-gecotex-ink border border-gecotex-border px-4 py-2 rounded-lg font-semibold hover:bg-gecotex-border-soft transition-colors text-sm;
+  }
+  .card {
+    @apply bg-white rounded-[10px] shadow-gx-sm border border-gecotex-border-soft p-5;
+  }
+  .input-field {
+    @apply w-full bg-gecotex-bg border border-gecotex-border rounded-lg px-3.5 py-2.5 text-[13.5px] text-gecotex-ink placeholder:text-gecotex-ink-muted focus:outline-none focus:ring-2 focus:ring-gecotex-blue/10 focus:border-gecotex-blue transition-all;
+  }
+  .label {
+    @apply block text-xs font-semibold text-gecotex-ink tracking-wide mb-1.5;
+  }
+  .table-header {
+    @apply text-left text-[11px] font-semibold text-gecotex-ink-muted uppercase tracking-widest py-3 px-4 bg-white border-b border-gecotex-border-soft;
+  }
+  .table-cell {
+    @apply py-3.5 px-4 text-[13px] text-gecotex-ink border-b border-gecotex-border-soft;
+  }
+}
+
+.sidebar-item {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all cursor-pointer relative;
+}
+.sidebar-item-active {
+  @apply bg-gecotex-blue/20 text-white font-semibold;
+}
+.sidebar-item-active::before {
+  content: '';
+  @apply absolute -left-3 top-2 bottom-2 w-[3px] bg-gecotex-blue rounded-r;
+}
+.sidebar-item-inactive {
+  @apply text-white/70 hover:bg-white/10 hover:text-white;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 2s infinite;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-gray-100; }
+::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
