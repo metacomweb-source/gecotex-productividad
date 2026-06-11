@@ -59,9 +59,9 @@ export default function ExpedienteForm() {
       incrementadoresApi.listar(),
       isCoordinador ? usuariosApi.listar() : Promise.resolve({ data: [] }),
     ]).then(([tipos, incs, ops]) => {
-      setTiposDua(tipos.data)
-      setIncrementadores(incs.data)
-      setOperarios(ops.data.filter(u => u.rol === 'operario' || u.rol === 'coordinador'))
+      setTiposDua(Array.isArray(tipos.data) ? tipos.data : [])
+      setIncrementadores(Array.isArray(incs.data) ? incs.data : [])
+      setOperarios(Array.isArray(ops.data) ? ops.data.filter(u => u.rol === 'operario' || u.rol === 'coordinador') : [])
     }).catch(() => {
       toast.error('No se pudieron cargar los datos del formulario. Comprueba que el backend está activo.')
     })
