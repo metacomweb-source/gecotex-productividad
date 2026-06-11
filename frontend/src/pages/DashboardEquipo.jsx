@@ -39,11 +39,11 @@ const TeamSemaphore = ({ pct, total, obj, semaforo }) => {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">UPs Equipo</p>
-            <p className="text-2xl font-black text-gecotex-ink font-mono">{total.toFixed(0)}</p>
+            <p className="text-2xl font-black text-gecotex-ink font-mono">{(total ?? 0).toFixed(0)}</p>
           </div>
           <div>
             <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">Objetivo</p>
-            <p className="text-2xl font-black text-gecotex-ink-muted font-mono">{obj.toFixed(0)}</p>
+            <p className="text-2xl font-black text-gecotex-ink-muted font-mono">{(obj ?? 0).toFixed(0)}</p>
           </div>
         </div>
       </div>

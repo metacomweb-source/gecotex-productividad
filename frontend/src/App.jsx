@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
+import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import DashboardOperario from './pages/DashboardOperario'
 import DashboardEquipo from './pages/DashboardEquipo'
@@ -41,20 +42,20 @@ export default function App() {
       <Route path="/login" element={usuario ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/" element={<DefaultRedirect />} />
 
-      <Route path="/dashboard" element={<ProtectedRoute><Layout><DashboardOperario /></Layout></ProtectedRoute>} />
-      <Route path="/expedientes" element={<ProtectedRoute><Layout><Expedientes /></Layout></ProtectedRoute>} />
-      <Route path="/expedientes/nuevo" element={<ProtectedRoute><Layout><ExpedienteForm /></Layout></ProtectedRoute>} />
-      <Route path="/expedientes/:id" element={<ProtectedRoute><Layout><ExpedienteDetalle /></Layout></ProtectedRoute>} />
-      <Route path="/expedientes/:id/editar" element={<ProtectedRoute><Layout><ExpedienteForm /></Layout></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Layout><ErrorBoundary><DashboardOperario /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/expedientes" element={<ProtectedRoute><Layout><ErrorBoundary><Expedientes /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/expedientes/nuevo" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteForm /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/expedientes/:id" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteDetalle /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/expedientes/:id/editar" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteForm /></ErrorBoundary></Layout></ProtectedRoute>} />
 
-      <Route path="/equipo" element={<ProtectedRoute requiredRole="coordinador"><Layout><DashboardEquipo /></Layout></ProtectedRoute>} />
-      <Route path="/objetivos" element={<ProtectedRoute requiredRole="coordinador"><Layout><Objetivos /></Layout></ProtectedRoute>} />
-      <Route path="/tabla-maestra" element={<ProtectedRoute requiredRole="coordinador"><Layout><TablaMaestraDUAs /></Layout></ProtectedRoute>} />
-      <Route path="/importacion" element={<ProtectedRoute requiredRole="coordinador"><Layout><ImportacionExcel /></Layout></ProtectedRoute>} />
-      <Route path="/bonus" element={<ProtectedRoute requiredRole="director"><Layout><Bonus /></Layout></ProtectedRoute>} />
-      <Route path="/empleados" element={<ProtectedRoute requiredRole="admin"><Layout><Empleados /></Layout></ProtectedRoute>} />
-      <Route path="/informes" element={<ProtectedRoute><Layout><Informes /></Layout></ProtectedRoute>} />
-      <Route path="/configuracion" element={<ProtectedRoute requiredRole="admin"><Layout><Configuracion /></Layout></ProtectedRoute>} />
+      <Route path="/equipo" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><DashboardEquipo /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/objetivos" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><Objetivos /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/tabla-maestra" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><TablaMaestraDUAs /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/importacion" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><ImportacionExcel /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/bonus" element={<ProtectedRoute requiredRole="director"><Layout><ErrorBoundary><Bonus /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/empleados" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Empleados /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/informes" element={<ProtectedRoute><Layout><ErrorBoundary><Informes /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/configuracion" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Configuracion /></ErrorBoundary></Layout></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

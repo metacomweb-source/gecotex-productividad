@@ -16,12 +16,16 @@ export default function Objetivos() {
   const meses = Array.from({ length: 12 }, (_, i) => i + 1)
 
   const loadData = async () => {
-    const [opsRes, objRes] = await Promise.all([
-      usuariosApi.listar(),
-      objetivosApi.listar({ año }),
-    ])
-    setOperarios(opsRes.data.filter(u => u.rol === 'operario'))
-    setObjetivos(objRes.data)
+    try {
+      const [opsRes, objRes] = await Promise.all([
+        usuariosApi.listar(),
+        objetivosApi.listar({ año }),
+      ])
+      setOperarios(opsRes.data.filter(u => u.rol === 'operario'))
+      setObjetivos(objRes.data)
+    } catch {
+      toast.error('Error cargando datos de objetivos')
+    }
   }
 
   useEffect(() => { loadData() }, [año])

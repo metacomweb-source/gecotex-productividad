@@ -251,7 +251,7 @@ export default function ExpedienteForm() {
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-baseline mb-1">
                             <span className="text-[13.5px] font-bold text-gecotex-ink truncate pr-2">{t.nombre}</span>
-                            <span className="text-[11.5px] font-bold text-gecotex-blue font-mono whitespace-nowrap">{t.up_base.toFixed(1)} UP</span>
+                            <span className="text-[11.5px] font-bold text-gecotex-blue font-mono whitespace-nowrap">{(t.up_base ?? 0).toFixed(1)} UP</span>
                           </div>
                           <p className="text-[11.5px] text-gecotex-ink-sub line-clamp-1">{t.descripcion || 'Operación estándar'}</p>
                         </div>
@@ -343,7 +343,7 @@ export default function ExpedienteForm() {
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-baseline">
                                 <span className="text-[12.5px] font-bold text-gecotex-ink truncate pr-2">{inc.nombre}</span>
-                                <span className="text-[10.5px] font-bold text-gecotex-blue font-mono">+{inc.up_adicional.toFixed(1)}</span>
+                                <span className="text-[10.5px] font-bold text-gecotex-blue font-mono">+{(inc.up_adicional ?? 0).toFixed(1)}</span>
                               </div>
                             </div>
                           </label>
@@ -441,17 +441,17 @@ export default function ExpedienteForm() {
                 <div className="flex justify-between items-center text-[13px]">
                   <span className="text-gecotex-ink-sub">DUA {tipoDuaSeleccionado?.codigo || '(Base)'}</span>
                   <div className="text-right">
-                    <p className="font-bold text-gecotex-ink">{tipoDuaSeleccionado?.up_base.toFixed(2) || '0.00'} UP</p>
-                    <p className="text-[11px] text-gecotex-ink-muted">{tipoDuaSeleccionado?.precio_unitario.toFixed(2) || '0.00'}€</p>
+                    <p className="font-bold text-gecotex-ink">{(tipoDuaSeleccionado?.up_base ?? 0).toFixed(2)} UP</p>
+                    <p className="text-[11px] text-gecotex-ink-muted">{(tipoDuaSeleccionado?.precio_unitario ?? 0).toFixed(2)}€</p>
                   </div>
                 </div>
                 
                 {form.num_partidas > (tipoDuaSeleccionado?.tramo_partidas_min || 0) && (
                   <div className="flex justify-between items-center text-[13px]">
-                    <span className="text-gecotex-ink-sub">Partidas adicionales ({form.num_partidas - tipoDuaSeleccionado.tramo_partidas_min})</span>
+                    <span className="text-gecotex-ink-sub">Partidas adicionales ({form.num_partidas - (tipoDuaSeleccionado?.tramo_partidas_min ?? 0)})</span>
                     <div className="text-right">
-                      <p className="font-bold text-gecotex-ink">+{( (form.num_partidas - tipoDuaSeleccionado.tramo_partidas_min) * 0.10 ).toFixed(2)} UP</p>
-                      <p className="text-[11px] text-gecotex-ink-muted">+{( (form.num_partidas - tipoDuaSeleccionado.tramo_partidas_min) * (tipoDuaSeleccionado.precio_partida_adicional || 0) ).toFixed(2)}€</p>
+                      <p className="font-bold text-gecotex-ink">+{( (form.num_partidas - (tipoDuaSeleccionado?.tramo_partidas_min ?? 0)) * 0.10 ).toFixed(2)} UP</p>
+                      <p className="text-[11px] text-gecotex-ink-muted">+{( (form.num_partidas - (tipoDuaSeleccionado?.tramo_partidas_min ?? 0)) * (tipoDuaSeleccionado?.precio_partida_adicional ?? 0) ).toFixed(2)}€</p>
                     </div>
                   </div>
                 )}
@@ -460,8 +460,8 @@ export default function ExpedienteForm() {
                   <div key={inc.id} className="flex justify-between items-center text-[13px]">
                     <span className="text-gecotex-ink-sub">{inc.nombre}</span>
                     <div className="text-right">
-                      <p className="font-bold text-gecotex-ink">+{inc.up_adicional.toFixed(2)} UP</p>
-                      <p className="text-[11px] text-gecotex-ink-muted">+{inc.precio_unitario.toFixed(2)}€</p>
+                      <p className="font-bold text-gecotex-ink">+{(inc.up_adicional ?? 0).toFixed(2)} UP</p>
+                      <p className="text-[11px] text-gecotex-ink-muted">+{(inc.precio_unitario ?? 0).toFixed(2)}€</p>
                     </div>
                   </div>
                 ))}
