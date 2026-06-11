@@ -1,5 +1,4 @@
 import { Component } from 'react'
-import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,35 +11,40 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[ErrorBoundary]', error, info.componentStack)
+    console.error('[ErrorBoundary]', error, info?.componentStack)
   }
 
   render() {
     if (this.state.error) {
+      const msg = this.state.error?.message ?? String(this.state.error ?? 'Error desconocido')
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-          <div className="w-16 h-16 bg-gecotex-red-soft rounded-full flex items-center justify-center mb-5">
-            <AlertTriangle size={28} className="text-gecotex-red" />
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', padding:'24px', textAlign:'center', fontFamily:'Inter,sans-serif' }}>
+          <div style={{ width:56, height:56, borderRadius:'50%', background:'#FBE7E4', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20 }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C0392B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
           </div>
-          <h2 className="text-xl font-bold text-gecotex-ink mb-2">Algo ha ido mal en esta página</h2>
-          <p className="text-sm text-gecotex-ink-sub mb-1 max-w-md">
+          <h2 style={{ fontSize:20, fontWeight:700, color:'#1A2233', marginBottom:8 }}>Algo ha ido mal en esta página</h2>
+          <p style={{ fontSize:13, color:'#5B6577', marginBottom:8, maxWidth:440 }}>
             Se ha producido un error inesperado. Puedes intentar recargar la página o volver atrás.
           </p>
-          <p className="text-xs font-mono text-gecotex-ink-muted bg-gecotex-bg border border-gecotex-border rounded-lg px-4 py-2 mb-6 max-w-md break-all">
-            {this.state.error.message}
+          <p style={{ fontSize:11, fontFamily:'monospace', color:'#8893A4', background:'#F4F6F9', border:'1px solid #E4E8EE', borderRadius:8, padding:'6px 16px', marginBottom:24, maxWidth:440, wordBreak:'break-all' }}>
+            {msg}
           </p>
-          <div className="flex gap-3">
+          <div style={{ display:'flex', gap:12 }}>
             <button
               onClick={() => window.history.back()}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gecotex-border text-gecotex-ink-sub text-sm font-semibold hover:bg-gecotex-bg transition-colors"
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, border:'1px solid #E4E8EE', background:'white', color:'#5B6577', fontSize:13, fontWeight:600, cursor:'pointer' }}
             >
-              <ArrowLeft size={16} /> Volver
+              ← Volver
             </button>
             <button
               onClick={() => this.setState({ error: null })}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gecotex-navy text-white text-sm font-semibold hover:bg-gecotex-navy-dark transition-colors"
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, border:'none', background:'#1F3864', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}
             >
-              <RefreshCw size={16} /> Reintentar
+              ↺ Reintentar
             </button>
           </div>
         </div>
