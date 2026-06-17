@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Users, Plus, Loader2, Download, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 const ESTADOS = {
   borrador: { label: 'Borrador', cls: 'bg-gray-100 text-gray-600' },
@@ -25,6 +26,7 @@ function PuntCell({ valor }) {
 
 export default function EvaluacionesBonus() {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [año, setAño] = useState(new Date().getFullYear())
   const [semestre, setSemestre] = useState(new Date().getMonth() < 6 ? 1 : 2)
   const [evaluaciones, setEvaluaciones] = useState([])
@@ -57,7 +59,7 @@ export default function EvaluacionesBonus() {
 
   const handleIniciarPeriodo = async () => {
     if (!config) {
-      toast.error('Primero configura el período en Configuración → Bonus')
+      toast.error('Este período no tiene configuración. El administrador debe crearla en Configuración → Bonus.')
       return
     }
     setIniciando(true)
@@ -118,7 +120,7 @@ export default function EvaluacionesBonus() {
             <option value={1}>Semestre 1 (Ene–Jun)</option>
             <option value={2}>Semestre 2 (Jul–Dic)</option>
           </select>
-          {config && !loading && (
+          {!loading && (
             <button onClick={handleIniciarPeriodo} disabled={iniciando} className="btn-primary flex items-center gap-2">
               {iniciando ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
               {evaluaciones.length === 0 ? 'Iniciar período' : 'Crear evaluaciones faltantes'}
@@ -175,8 +177,18 @@ export default function EvaluacionesBonus() {
           <p className="font-medium">No hay evaluaciones para este período</p>
           {config ? (
             <p className="text-sm mt-1">Haz clic en "Iniciar período" para crear las evaluaciones de los empleados elegibles.</p>
+          ) : isAdmin ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-orange-500">Este período no tiene configuración.</p>
+              <button
+                onClick={() => navigate('/config-bonus')}
+                className="text-sm px-4 py-2 bg-gecotex-primary text-white rounded-xl hover:bg-gecotex-navy-dark transition-colors"
+              >
+                Configurar período →
+              </button>
+            </div>
           ) : (
-            <p className="text-sm mt-1 text-orange-500">Primero configura el período en Configuración → Bonus.</p>
+            <p className="text-sm mt-1 text-orange-500">Este período no tiene configuración. Contacta con el administrador.</p>
           )}
         </div>
       ) : (

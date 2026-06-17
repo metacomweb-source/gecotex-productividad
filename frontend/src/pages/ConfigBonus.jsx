@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Loader2, Save, Plus, Trash2, ChevronDown, ChevronUp,
   Info, ToggleLeft, ToggleRight, AlertTriangle, Check, X, Pencil
@@ -201,6 +202,7 @@ function OkBadge({ ok, okText, errText }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ConfigBonus() {
+  const navigate = useNavigate()
   const [año, setAño]               = useState(CY)
   const [semestre, setSemestre]     = useState(CS)
   const [config, setConfig]         = useState(null)
@@ -375,6 +377,12 @@ export default function ConfigBonus() {
                 ● Cambios sin guardar
               </span>
             )}
+            <button
+              onClick={() => navigate('/evaluaciones-bonus')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gecotex-primary text-gecotex-primary hover:bg-gecotex-primary/5 transition-all"
+            >
+              Ver Evaluaciones →
+            </button>
             <button
               onClick={() => setShowModal(true)}
               disabled={saving || !pesosSuman}
