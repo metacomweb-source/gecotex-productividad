@@ -9,10 +9,11 @@ import { Users, Sparkles, Shield, CheckCircle, Award, Package, ArrowUp, ArrowDow
 import { fmtUP, fmtK, fmtPct, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
 
-const TeamSemaphore = ({ pct, total, obj, semaforo }) => {
-  const p = Math.round(pct * 100)
+const TeamSemaphore = ({ pct, producidas, objetivo }) => {
+  const p = Math.min(100, Math.round(pct * 100))
+  const semaforo = pct >= 0.9 ? 'verde' : pct >= 0.7 ? 'naranja' : 'rojo'
   const color = semaforo === 'verde' ? '#27AE60' : semaforo === 'naranja' ? '#E67E22' : '#C0392B'
-  const label = semaforo === 'verde' ? 'Cumplimiento' : semaforo === 'naranja' ? 'Atención' : 'Por debajo'
+  const label = semaforo === 'verde' ? 'En objetivo' : semaforo === 'naranja' ? 'Atención' : 'Por debajo del objetivo'
 
   const r = 64, c = 2 * Math.PI * r
   const dash = Math.min(c, c * pct)
@@ -28,7 +29,7 @@ const TeamSemaphore = ({ pct, total, obj, semaforo }) => {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-4xl font-black tracking-tighter leading-none" style={{ color }}>{p}%</span>
-          <span className="text-[10px] font-bold text-gecotex-ink-muted uppercase tracking-widest mt-1">Suficiencia</span>
+          <span className="text-[10px] font-bold text-gecotex-ink-muted uppercase tracking-widest mt-1">del objetivo</span>
         </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -36,15 +37,15 @@ const TeamSemaphore = ({ pct, total, obj, semaforo }) => {
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
           <span className="text-[13px] font-bold" style={{ color }}>{label}</span>
         </div>
-        <h3 className="text-base font-bold text-gecotex-ink leading-tight mb-4">Ratio de suficiencia del equipo</h3>
+        <h3 className="text-base font-bold text-gecotex-ink leading-tight mb-4">Rendimiento del equipo este mes</h3>
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">UPs Equipo</p>
-            <p className="text-2xl font-black text-gecotex-ink font-mono">{(total ?? 0).toFixed(0)}</p>
+            <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">UPs producidas</p>
+            <p className="text-2xl font-black text-gecotex-ink font-mono">{(producidas ?? 0).toFixed(1)}</p>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">Objetivo</p>
-            <p className="text-2xl font-black text-gecotex-ink-muted font-mono">{(obj ?? 0).toFixed(0)}</p>
+            <p className="text-[11px] font-bold text-gecotex-ink-muted uppercase tracking-widest mb-1">Objetivo mes</p>
+            <p className="text-2xl font-black text-gecotex-ink-muted font-mono">{(objetivo ?? 0).toFixed(0)}</p>
           </div>
         </div>
       </div>
@@ -136,19 +137,18 @@ export default function DashboardEquipo() {
       {/* Suficiencia + Mini KPIs */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5">
-           {suficiencia && (
-             <TeamSemaphore 
-               pct={suficiencia.ratio} 
-               total={suficiencia.up_demanda} 
-               obj={suficiencia.up_oferta} 
-               semaforo={suficiencia.semaforo} 
+           {kpisEquipo && (
+             <TeamSemaphore
+               pct={(kpisEquipo.pct_cumplimiento_global ?? 0) / 100}
+               producidas={kpisEquipo.total_up_producidas}
+               objetivo={kpisEquipo.total_up_objetivo}
              />
            )}
         </div>
         <div className="lg:col-span-7">
            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <KpiCard titulo="Operarios activos" valor={suficiencia?.num_operarios_activos || 0} icono={Users} color="navy" footer="Equipo de Valencia" />
-              <KpiCard titulo="Factor K medio" valor={fmtK(kpisEquipo?.pct_cumplimiento_global / 100)} icono={Sparkles} color="orange" footer="Cumplimiento global" />
+              <KpiCard titulo="Factor K medio" valor={fmtK(ranking.length > 0 ? ranking.filter(o => o.factor_k != null).reduce((s, o) => s + o.factor_k, 0) / ranking.filter(o => o.factor_k != null).length : null)} icono={Sparkles} color="orange" footer="Media del equipo" />
               <KpiCard titulo="% Incidencia" valor={ranking.length > 0 ? fmtPct(ranking.reduce((s,o)=>s+(o.tasa_incidencia||0),0)/ranking.length) : '0'} unit="%" icono={Shield} color="verde" footer="Naranja + Rojo" />
               <KpiCard titulo="Expedientes" valor={kpisEquipo?.num_expedientes_total ?? '—'} icono={Package} color="navy" footer="Cerrados este mes" />
               <KpiCard titulo="UPs Totales" valor={fmtUP(kpisEquipo?.total_up_producidas)} icono={CheckCircle} color="verde" footer={`Vs ${fmtUP(kpisEquipo?.total_up_objetivo)} obj.`} />
