@@ -285,8 +285,21 @@ export default function ConfigBonus() {
         tabla_tramos_escalonados: form.tabla_tramos,
         config_area1: form.config_area1,
       }
-      if (config) await api.put(`/bonus/config/${config.id}`, payload)
-      else         await api.post('/bonus/config', payload)
+      if (config) {
+        await api.put(`/bonus/config/${config.id}`, payload)
+      } else {
+        try {
+          await api.post('/bonus/config', payload)
+        } catch (postErr) {
+          if (postErr.response?.status === 400) {
+            const cfgR = await api.get(`/bonus/config/${año}/${semestre}`)
+            setConfig(cfgR.data)
+            await api.put(`/bonus/config/${cfgR.data.id}`, payload)
+          } else {
+            throw postErr
+          }
+        }
+      }
       toast.success('Configuración guardada')
       await cargar()
     } catch (e) {

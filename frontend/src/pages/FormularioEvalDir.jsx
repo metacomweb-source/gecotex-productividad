@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Loader2, ChevronLeft, Save, Star, BarChart2 } from 'lucide-react'
+import { Loader2, ChevronLeft, Save, Star, BarChart2, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 
@@ -236,6 +236,16 @@ export default function FormularioEvalDir() {
           </div>
         </div>
       </div>
+
+      {/* Banner: empleado sin auto-eval */}
+      {['borrador', 'auto_evaluacion'].includes(evaluacion.estado) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800 flex items-start gap-2">
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+          <span>
+            El empleado aún no ha enviado su autoevaluación. Puedes completar la evaluación de dirección igualmente — las notas del empleado quedarán vacías en los factores no rellenados.
+          </span>
+        </div>
+      )}
 
       {/* Tabs áreas 2-4 */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1">

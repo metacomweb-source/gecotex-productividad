@@ -236,7 +236,7 @@ export default function EvaluacionesBonus() {
                   </td>
                   <td className="py-3 text-right">
                     <div className="flex gap-1 justify-end">
-                      {ev.estado === 'evaluacion_dir' && (
+                      {['borrador', 'auto_evaluacion', 'evaluacion_dir'].includes(ev.estado) && (
                         <button
                           onClick={() => navigate(`/evaluaciones-bonus/${ev.id}`)}
                           className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
@@ -260,7 +260,7 @@ export default function EvaluacionesBonus() {
                           </button>
                         </>
                       )}
-                      {['borrador', 'cerrada'].includes(ev.estado) && (
+                      {ev.estado === 'cerrada' && (
                         <button
                           onClick={() => navigate(`/evaluaciones-bonus/${ev.id}`)}
                           className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
