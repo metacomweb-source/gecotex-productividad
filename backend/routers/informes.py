@@ -8,7 +8,6 @@ from models.usuario import RolEnum, Usuario
 from models.expediente import Expediente
 from models.parametros_bonus import ParametrosBonus
 from services.calculo_kpis import calcular_kpis_operario, calcular_kpis_equipo
-from services.calculo_bonus import calcular_bonus_operario
 from services.generador_informes import (
     generar_informe_productividad,
     generar_informe_expedientes,
@@ -38,9 +37,6 @@ def informe_productividad(
     datos = []
     for op in operarios:
         kpi = calcular_kpis_operario(db, op.id, año, mes, factor_disp, tiempo_base)
-        if params:
-            bonus = calcular_bonus_operario(db, op.id, año, mes, params)
-            kpi["bonus_individual_pct"] = bonus.get("bonus_individual_pct")
         datos.append(kpi)
 
     buf = generar_informe_productividad(datos, año, mes)
@@ -95,24 +91,8 @@ def informe_bonus(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_min_role(RolEnum.director)),
 ):
-    año = año or datetime.now().year
-    params = db.query(ParametrosBonus).filter(ParametrosBonus.año == año).first()
-    if not params:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Parámetros de bonus no configurados")
-
-    operarios = db.query(Usuario).filter(Usuario.activo == True, Usuario.rol == RolEnum.operario).all()
-    datos = []
-    for mes in range(1, 13):
-        for op in operarios:
-            bonus = calcular_bonus_operario(db, op.id, año, mes, params)
-            bonus['mes'] = mes
-            datos.append(bonus)
-
-    buf = generar_informe_bonus(datos, año)
-    filename = f"bonus_{año}.xlsx"
-    return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    from fastapi import HTTPException
+    raise HTTPException(
+        status_code=410,
+        detail="El informe de bonus anual ha sido reemplazado por el sistema semestral. Usa GET /bonus/exportar/{año}/{semestre}",
     )
