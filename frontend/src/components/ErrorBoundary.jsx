@@ -3,7 +3,7 @@ import { Component } from 'react'
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { error: null, autoRetried: false }
+    this.state = { error: null }
   }
 
   static getDerivedStateFromError(error) {
@@ -12,10 +12,6 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info?.componentStack)
-    // Auto-retry once for intermittent render errors (e.g. hooks count mismatch on first mount)
-    if (!this.state.autoRetried) {
-      setTimeout(() => this.setState({ error: null, autoRetried: true }), 50)
-    }
   }
 
   render() {
