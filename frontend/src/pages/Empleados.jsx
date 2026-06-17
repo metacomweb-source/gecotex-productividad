@@ -17,9 +17,12 @@ function AvatarLetras({ nombre, apellidos, size = 'md' }) {
 const ROLES_ES = { admin: 'Admin', director: 'Director', coordinador: 'Coordinador', operario: 'Operario' }
 const ROL_COLORS = { admin: 'badge-rojo', director: 'badge-naranja', coordinador: 'badge-verde', operario: 'badge-gris' }
 
+const SEDES_ES = { barcelona: 'Barcelona', valencia: 'Valencia', aeropuerto: 'Aeropuerto' }
+
 const FORM_VACIO = {
   nombre: '', apellidos: '', email: '', password: '',
   rol: 'operario', departamento: 'operaciones',
+  sede: '',
   jornada_horas_dia: 8,
   fecha_incorporacion: '',
   salario_bruto_anual: '',
@@ -67,6 +70,7 @@ export default function Empleados() {
       password: '',
       rol: u.rol,
       departamento: u.departamento || 'operaciones',
+      sede: u.sede || '',
       jornada_horas_dia: u.jornada_horas_dia,
       fecha_incorporacion: u.fecha_incorporacion?.slice(0, 10) || '',
       salario_bruto_anual: u.salario_bruto_anual ?? '',
@@ -87,6 +91,7 @@ export default function Empleados() {
         salario_bruto_anual: form.salario_bruto_anual !== '' ? +form.salario_bruto_anual : null,
         pct_maximo_bonus: +form.pct_maximo_bonus / 100,
         fecha_incorporacion: form.fecha_incorporacion || null,
+        sede: form.sede || null,
       }
       if (modal.modo === 'crear') {
         await usuariosApi.crear(payload)
@@ -191,9 +196,20 @@ export default function Empleados() {
                     </select>
                   </div>
                 </div>
-                <div className="mt-3">
-                  <label className="label">Horas por día</label>
-                  <input type="number" step="0.5" min="1" max="12" className="input-field" value={form.jornada_horas_dia} onChange={e => setForm(f => ({...f, jornada_horas_dia: e.target.value}))} />
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Sede</label>
+                    <select className="input-field" value={form.sede} onChange={e => setForm(f => ({...f, sede: e.target.value}))}>
+                      <option value="">Sin asignar</option>
+                      <option value="barcelona">Barcelona</option>
+                      <option value="valencia">Valencia</option>
+                      <option value="aeropuerto">Aeropuerto</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Horas por día</label>
+                    <input type="number" step="0.5" min="1" max="12" className="input-field" value={form.jornada_horas_dia} onChange={e => setForm(f => ({...f, jornada_horas_dia: e.target.value}))} />
+                  </div>
                 </div>
               </div>
 
@@ -277,6 +293,7 @@ export default function Empleados() {
                 Antigüedad: <span className="font-medium text-gray-600">{antiguedad(u.fecha_incorporacion)}</span>
                 {' · '}
                 {u.jornada_horas_dia}h/día
+                {u.sede && <> · <span className="font-medium text-gecotex-navy">{SEDES_ES[u.sede]}</span></>}
               </p>
               {(u.salario_bruto_anual || u.pct_maximo_bonus) && (
                 <p className="text-xs text-gray-400 mt-0.5">
