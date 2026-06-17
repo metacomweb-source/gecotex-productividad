@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { expedientesApi, tiposDuaApi, incrementadoresApi, usuariosApi } from '../api/client'
+import { expedientesApi, tiposDuaApi, incrementadoresApi, usuariosApi, clientesApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { calcularUP, calcularValorFacturacion } from '../utils/calculos'
 import { ArrowLeft, Save, Mail, Folder, Send, CheckCircle2, Receipt, Users, Calendar, Shield, Sparkles, Info, ChevronRight, Package, Paperclip, X } from 'lucide-react'
@@ -35,6 +35,7 @@ export default function ExpedienteForm() {
   const [tiposDua, setTiposDua] = useState([])
   const [incrementadores, setIncrementadores] = useState([])
   const [operarios, setOperarios] = useState([])
+  const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(false)
   const [archivoDua, setArchivoDua] = useState(null)
   const [docActual, setDocActual] = useState(null)
@@ -44,6 +45,7 @@ export default function ExpedienteForm() {
     numero_expediente: '',
     operario_id: usuario?.id || '',
     tipo_dua_id: '',
+    cliente_id: null,
     cliente_nombre: '',
     tipo_trafico: 'exportacion',
     num_partidas: 1,
@@ -62,10 +64,12 @@ export default function ExpedienteForm() {
       tiposDuaApi.listar(),
       incrementadoresApi.listar(),
       isCoordinador ? usuariosApi.listar() : Promise.resolve({ data: [] }),
-    ]).then(([tipos, incs, ops]) => {
+      clientesApi.listar(),
+    ]).then(([tipos, incs, ops, clis]) => {
       setTiposDua(Array.isArray(tipos.data) ? tipos.data : [])
       setIncrementadores(Array.isArray(incs.data) ? incs.data : [])
       setOperarios(Array.isArray(ops.data) ? ops.data.filter(u => u.rol === 'operario' || u.rol === 'coordinador') : [])
+      setClientes(Array.isArray(clis.data) ? clis.data : [])
     }).catch(() => {
       toast.error('No se pudieron cargar los datos del formulario. Comprueba que el backend está activo.')
     })
@@ -77,6 +81,7 @@ export default function ExpedienteForm() {
           numero_expediente: e.numero_expediente,
           operario_id: e.operario_id,
           tipo_dua_id: e.tipo_dua_id,
+          cliente_id: e.cliente_id || null,
           cliente_nombre: e.cliente_nombre,
           tipo_trafico: e.tipo_trafico,
           num_partidas: e.num_partidas,
@@ -114,7 +119,7 @@ export default function ExpedienteForm() {
     e.preventDefault()
     const faltantes = []
     if (!form.numero_expediente) faltantes.push('Número de expediente')
-    if (!form.cliente_nombre) faltantes.push('Cliente')
+    if (!form.cliente_id) faltantes.push('Cliente')
     if (!form.tipo_dua_id) faltantes.push('Tipo de DUA (sección 2)')
     if (faltantes.length > 0) {
       toast.error(`Faltan campos obligatorios: ${faltantes.join(', ')}`)
@@ -230,14 +235,21 @@ export default function ExpedienteForm() {
                   <div className="space-y-1">
                     <label className="label">Cliente <span className="text-gecotex-red">*</span></label>
                     <div className="relative">
-                      <input
-                        className="input-field pl-10"
-                        value={form.cliente_nombre}
-                        onChange={e => setForm(f => ({...f, cliente_nombre: e.target.value}))}
-                        placeholder="Nombre del cliente o empresa"
+                      <select
+                        className="input-field pl-10 appearance-none"
+                        value={form.cliente_id || ''}
+                        onChange={e => {
+                          const cli = clientes.find(c => c.id === +e.target.value)
+                          setForm(f => ({ ...f, cliente_id: cli ? cli.id : null, cliente_nombre: cli ? cli.nombre : '' }))
+                        }}
                         required
-                      />
-                      <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gecotex-ink-muted" />
+                      >
+                        <option value="">Selecciona un cliente...</option>
+                        {clientes.map(c => (
+                          <option key={c.id} value={c.id}>{c.nombre}</option>
+                        ))}
+                      </select>
+                      <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gecotex-ink-muted pointer-events-none" />
                     </div>
                   </div>
                   <div className="space-y-1">

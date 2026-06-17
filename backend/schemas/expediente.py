@@ -8,6 +8,7 @@ class ExpedienteBase(BaseModel):
     numero_expediente: str
     tipo_dua_id: int
     cliente_nombre: str
+    cliente_id: Optional[int] = None
     tipo_trafico: TipoTraficoCampoEnum
     num_partidas: int = 1
     canal_respuesta: CanalEnum = CanalEnum.pendiente
@@ -26,6 +27,7 @@ class ExpedienteCreate(ExpedienteBase):
 
 class ExpedienteUpdate(BaseModel):
     tipo_dua_id: Optional[int] = None
+    cliente_id: Optional[int] = None
     cliente_nombre: Optional[str] = None
     tipo_trafico: Optional[TipoTraficoCampoEnum] = None
     num_partidas: Optional[int] = None

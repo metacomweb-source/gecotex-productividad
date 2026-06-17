@@ -5,6 +5,7 @@ from auth import hash_password
 from models.usuario import Usuario, RolEnum, DepartamentoEnum, SedeEnum
 from models.tipo_dua import TipoDua, TipoTraficoEnum
 from models.incrementador import Incrementador
+from models.cliente import Cliente
 from models.expediente import Expediente, CanalEnum, OrigenEnum
 from models.objetivo_mes import ObjetivoMes
 from models.notificacion import Notificacion, TipoNotificacionEnum
@@ -165,6 +166,12 @@ def cargar_seed(db: Session):
             db.add(obj)
     db.commit()
 
+    # --- CLIENTES ---
+    for nombre in CLIENTES:
+        db.add(Cliente(nombre=nombre))
+    db.flush()
+    cliente_map = {c.nombre: c.id for c in db.query(Cliente).all()}
+
     # --- EXPEDIENTES DE PRUEBA ---
     tipos_exp = [t for t in tipos if t.tipo_trafico == TipoTraficoEnum.exportacion]
     tipos_imp = [t for t in tipos if t.tipo_trafico == TipoTraficoEnum.importacion]
@@ -203,7 +210,8 @@ def cargar_seed(db: Session):
                 numero_expediente=f"GCT{año_exp}{mes_exp:02d}{contador:04d}",
                 operario_id=op.id,
                 tipo_dua_id=tipo_dua.id,
-                cliente_nombre=random.choice(CLIENTES),
+                cliente_nombre=(c_nombre := random.choice(CLIENTES)),
+                cliente_id=cliente_map.get(c_nombre),
                 tipo_trafico=tipo_dua.tipo_trafico,
                 num_partidas=num_partidas,
                 canal_respuesta=random.choices([CanalEnum.verde, CanalEnum.naranja, CanalEnum.rojo], weights=[70, 20, 10])[0],

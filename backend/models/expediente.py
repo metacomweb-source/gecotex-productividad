@@ -49,6 +49,9 @@ class Expediente(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    operario = relationship("Usuario", back_populates="expedientes", foreign_keys=[operario_id])
-    tipo_dua = relationship("TipoDua", back_populates="expedientes")
-    sesiones = relationship("SesionTrabajo", back_populates="expediente", cascade="all, delete-orphan")
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
+
+    operario    = relationship("Usuario", back_populates="expedientes", foreign_keys=[operario_id])
+    tipo_dua    = relationship("TipoDua", back_populates="expedientes")
+    sesiones    = relationship("SesionTrabajo", back_populates="expediente", cascade="all, delete-orphan")
+    cliente_rel = relationship("Cliente", back_populates="expedientes")

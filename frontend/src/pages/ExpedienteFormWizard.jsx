@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { expedientesApi, tiposDuaApi, incrementadoresApi, usuariosApi } from '../api/client'
+import { expedientesApi, tiposDuaApi, incrementadoresApi, usuariosApi, clientesApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { calcularUP } from '../utils/calculos'
 import { ArrowLeft, ArrowRight, Check, Package, Ship, RotateCcw, Sparkles, Plus, Minus, Save, Calendar } from 'lucide-react'
@@ -62,6 +62,7 @@ export default function ExpedienteFormWizard() {
   const [tiposDua, setTiposDua] = useState([])
   const [incrementadores, setIncrementadores] = useState([])
   const [operarios, setOperarios] = useState([])
+  const [clientes, setClientes] = useState([])
   const [modalCronometro, setModalCronometro] = useState(null)
 
   const [form, setForm] = useState({
@@ -69,6 +70,7 @@ export default function ExpedienteFormWizard() {
     tipo_dua_id: '',
     num_partidas: 1,
     numero_expediente: '',
+    cliente_id: null,
     cliente_nombre: '',
     operario_id: usuario?.id || '',
     servicios_adicionales: [],
@@ -86,10 +88,12 @@ export default function ExpedienteFormWizard() {
       tiposDuaApi.listar(),
       incrementadoresApi.listar(),
       isCoordinador ? usuariosApi.listar() : Promise.resolve({ data: [] }),
-    ]).then(([tipos, incs, ops]) => {
+      clientesApi.listar(),
+    ]).then(([tipos, incs, ops, clis]) => {
       setTiposDua(Array.isArray(tipos.data) ? tipos.data : [])
       setIncrementadores(Array.isArray(incs.data) ? incs.data.filter(i => i.activo) : [])
       setOperarios(Array.isArray(ops.data) ? ops.data.filter(u => u.rol === 'operario' || u.rol === 'coordinador') : [])
+      setClientes(Array.isArray(clis.data) ? clis.data : [])
     }).catch(() => toast.error('Error cargando datos'))
   }, [isCoordinador])
 
@@ -109,7 +113,7 @@ export default function ExpedienteFormWizard() {
 
   const puedeAvanzar = () => {
     if (paso === 0) return form.tipo_trafico && form.tipo_dua_id
-    if (paso === 1) return form.numero_expediente && form.cliente_nombre
+    if (paso === 1) return form.numero_expediente && form.cliente_id
     return true
   }
 
@@ -292,12 +296,17 @@ export default function ExpedienteFormWizard() {
             </div>
             <div className="space-y-1">
               <label className="label">Cliente *</label>
-              <input
+              <select
                 className="input-field"
-                value={form.cliente_nombre}
-                onChange={e => setForm(f => ({ ...f, cliente_nombre: e.target.value }))}
-                placeholder="Nombre del cliente o empresa"
-              />
+                value={form.cliente_id || ''}
+                onChange={e => {
+                  const cli = clientes.find(c => c.id === +e.target.value)
+                  setForm(f => ({ ...f, cliente_id: cli ? cli.id : null, cliente_nombre: cli ? cli.nombre : '' }))
+                }}
+              >
+                <option value="">Selecciona un cliente...</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
             </div>
             {isCoordinador && (
               <div className="space-y-1">

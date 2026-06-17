@@ -157,6 +157,14 @@ export const notificacionesApi = {
   marcarTodas: () => api.put('/notificaciones/leer-todas'),
 }
 
+// Clientes
+export const clientesApi = {
+  listar:     (soloActivos = true) => api.get('/clientes', { params: { solo_activos: soloActivos } }),
+  crear:      (data)  => api.post('/clientes', data),
+  actualizar: (id, d) => api.put(`/clientes/${id}`, d),
+  desactivar: (id)    => api.delete(`/clientes/${id}`),
+}
+
 // Dashboard equipo
 export const dashboardApi = {
   kpisGlobales:       (p) => api.get('/dashboard/kpis-globales', { params: p }),

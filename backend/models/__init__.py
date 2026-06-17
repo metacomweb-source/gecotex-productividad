@@ -1,6 +1,7 @@
 from models.usuario import Usuario, RolEnum, DepartamentoEnum
 from models.tipo_dua import TipoDua, TipoTraficoEnum
 from models.incrementador import Incrementador
+from models.cliente import Cliente
 from models.expediente import Expediente, CanalEnum, OrigenEnum
 from models.sesion_trabajo import SesionTrabajo, EstadoSesionEnum
 from models.objetivo_mes import ObjetivoMes
@@ -16,6 +17,7 @@ __all__ = [
     "Usuario", "RolEnum", "DepartamentoEnum",
     "TipoDua", "TipoTraficoEnum",
     "Incrementador",
+    "Cliente",
     "Expediente", "CanalEnum", "OrigenEnum",
     "SesionTrabajo", "EstadoSesionEnum",
     "ObjetivoMes",

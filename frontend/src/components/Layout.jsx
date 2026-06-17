@@ -6,7 +6,7 @@ import Cronometro from './Cronometro'
 import {
   LayoutDashboard, FileText, Users, Target, Award, Upload,
   Settings, ChevronLeft, ChevronRight, Bell, LogOut,
-  BarChart3, Database, Timer, ClipboardCheck, SlidersHorizontal
+  BarChart3, Database, Timer, ClipboardCheck, SlidersHorizontal, Building2
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -40,6 +40,7 @@ export default function Layout({ children }) {
     'empleados': { name: 'Empleados', desc: 'Gestión de usuarios, roles y accesos al sistema' },
     'informes': { name: 'Informes Excel', desc: 'Descarga informes de productividad, expedientes y bonus' },
     'configuracion': { name: 'Configuración', desc: 'Parámetros generales del sistema GECOTEX' },
+    'clientes': { name: 'Clientes', desc: 'Catálogo de clientes para los expedientes aduaneros' },
     'config-bonus': { name: 'Configuración de bonus', desc: 'Parámetros de evaluación semestral: áreas, tramos y factores' },
   }
 
@@ -76,6 +77,7 @@ export default function Layout({ children }) {
             <>
               <NavItem to="/equipo" icon={Users} label="Dashboard" collapsed={collapsed} />
               <NavItem to="/objetivos" icon={Target} label="Objetivos" collapsed={collapsed} />
+              <NavItem to="/clientes" icon={Building2} label="Clientes" collapsed={collapsed} />
               <NavItem to="/tabla-maestra" icon={Database} label="DUAs y tarifas" collapsed={collapsed} />
               <NavItem to="/importacion" icon={Upload} label="Importar Excel" collapsed={collapsed} />
             </>

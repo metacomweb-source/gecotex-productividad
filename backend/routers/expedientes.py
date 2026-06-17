@@ -10,6 +10,7 @@ from models.expediente import Expediente
 from models.usuario import Usuario, RolEnum
 from models.tipo_dua import TipoDua
 from models.incrementador import Incrementador
+from models.cliente import Cliente
 from schemas.expediente import ExpedienteCreate, ExpedienteUpdate, ExpedienteResponse
 from services.calculo_up import calcular_up, calcular_partidas_adicionales, calcular_valor_facturacion
 
@@ -39,6 +40,7 @@ def listar_expedientes(
     canal: Optional[str] = Query(None),
     tipo_trafico: Optional[str] = Query(None),
     tipo_dua_id: Optional[int] = Query(None),
+    cliente_id: Optional[int] = Query(None),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -63,6 +65,8 @@ def listar_expedientes(
         q = q.filter(Expediente.tipo_trafico == tipo_trafico)
     if tipo_dua_id:
         q = q.filter(Expediente.tipo_dua_id == tipo_dua_id)
+    if cliente_id:
+        q = q.filter(Expediente.cliente_id == cliente_id)
 
     expedientes = q.order_by(Expediente.created_at.desc()).offset(skip).limit(limit).all()
     result = []
@@ -96,11 +100,18 @@ def crear_expediente(
     up = calcular_up(tipo_dua, data.num_partidas, incrementadores)
     valor = calcular_valor_facturacion(tipo_dua, data.num_partidas, incrementadores)
 
+    cliente_nombre = data.cliente_nombre
+    if data.cliente_id:
+        cli = db.query(Cliente).filter(Cliente.id == data.cliente_id, Cliente.activo == True).first()
+        if cli:
+            cliente_nombre = cli.nombre
+
     exp = Expediente(
         numero_expediente=data.numero_expediente,
         operario_id=operario_id,
         tipo_dua_id=data.tipo_dua_id,
-        cliente_nombre=data.cliente_nombre,
+        cliente_id=data.cliente_id,
+        cliente_nombre=cliente_nombre,
         tipo_trafico=data.tipo_trafico,
         num_partidas=data.num_partidas,
         canal_respuesta=data.canal_respuesta,
@@ -157,6 +168,11 @@ def actualizar_expediente(
 
     update_data = data.model_dump(exclude_unset=True)
     recalcular = "tipo_dua_id" in update_data or "num_partidas" in update_data or "servicios_adicionales" in update_data
+
+    if "cliente_id" in update_data and update_data["cliente_id"]:
+        cli = db.query(Cliente).filter(Cliente.id == update_data["cliente_id"], Cliente.activo == True).first()
+        if cli:
+            update_data["cliente_nombre"] = cli.nombre
 
     for key, value in update_data.items():
         setattr(exp, key, value)

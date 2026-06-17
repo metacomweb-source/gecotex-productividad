@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { expedientesApi, informesApi } from '../api/client'
+import { expedientesApi, informesApi, clientesApi, usuariosApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import Semaforo from '../components/Semaforo'
 import { Plus, Search, Download, Filter, RefreshCw } from 'lucide-react'
@@ -12,24 +12,35 @@ const MESES = Array.from({length: 12}, (_, i) => ({ value: i+1, label: nombreMes
 export default function Expedientes() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isCoordinador } = useAuth()
+  const { isCoordinador, isAdmin } = useAuth()
   const now = new Date()
   const [expedientes, setExpedientes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [clientes, setClientes] = useState([])
+  const [operarios, setOperarios] = useState([])
   const [filtros, setFiltros] = useState({
     año: now.getFullYear(),
     mes: now.getMonth() + 1,
     canal: '',
     tipo_trafico: '',
     search: '',
+    cliente_id: '',
     operario_id: searchParams.get('operario_id') || '',
   })
+
+  useEffect(() => {
+    clientesApi.listar().then(r => setClientes(Array.isArray(r.data) ? r.data : [])).catch(() => {})
+    if (isAdmin) {
+      usuariosApi.listar().then(r => setOperarios(Array.isArray(r.data) ? r.data.filter(u => u.rol === 'operario' || u.rol === 'coordinador') : [])).catch(() => {})
+    }
+  }, [isAdmin])
 
   const fetchExpedientes = () => {
     setLoading(true)
     const params = { año: filtros.año, mes: filtros.mes, limit: 200 }
     if (filtros.canal) params.canal = filtros.canal
     if (filtros.tipo_trafico) params.tipo_trafico = filtros.tipo_trafico
+    if (filtros.cliente_id) params.cliente_id = filtros.cliente_id
     if (filtros.operario_id) params.operario_id = filtros.operario_id
     expedientesApi.listar(params)
       .then(r => setExpedientes(r.data))
@@ -37,7 +48,7 @@ export default function Expedientes() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchExpedientes() }, [filtros.año, filtros.mes, filtros.canal, filtros.tipo_trafico, filtros.operario_id])
+  useEffect(() => { fetchExpedientes() }, [filtros.año, filtros.mes, filtros.canal, filtros.tipo_trafico, filtros.cliente_id, filtros.operario_id])
 
   const filteredExpedientes = expedientes.filter(e =>
     !filtros.search ||
@@ -98,6 +109,18 @@ export default function Expedientes() {
             <option value="importacion">Importación</option>
             <option value="regimen_especial">Régimen especial</option>
           </select>
+          {clientes.length > 0 && (
+            <select className="input-field w-auto text-sm" value={filtros.cliente_id} onChange={e => setFiltros(f => ({...f, cliente_id: e.target.value}))}>
+              <option value="">Todos los clientes</option>
+              {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          )}
+          {isAdmin && operarios.length > 0 && (
+            <select className="input-field w-auto text-sm" value={filtros.operario_id} onChange={e => setFiltros(f => ({...f, operario_id: e.target.value}))}>
+              <option value="">Todos los empleados</option>
+              {operarios.map(op => <option key={op.id} value={op.id}>{op.nombre} {op.apellidos}</option>)}
+            </select>
+          )}
           <button onClick={fetchExpedientes} className="btn-secondary text-sm flex items-center gap-1">
             <RefreshCw size={14} /> Refrescar
           </button>

@@ -21,6 +21,7 @@ import Empleados from './pages/Empleados'
 import Informes from './pages/Informes'
 import Configuracion from './pages/Configuracion'
 import ConfigBonus from './pages/ConfigBonus'
+import Clientes from './pages/Clientes'
 
 function ProtectedRoute({ children, requiredRole }) {
   const { usuario, loading, isCoordinador, isDirector, isAdmin } = useAuth()
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/expedientes/:id" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteDetalle /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/expedientes/:id/editar" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteForm /></ErrorBoundary></Layout></ProtectedRoute>} />
 
+      <Route path="/clientes" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><Clientes /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/equipo" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><DashboardEquipo /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/objetivos" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><Objetivos /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/tabla-maestra" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><TablaMaestraDUAs /></ErrorBoundary></Layout></ProtectedRoute>} />
