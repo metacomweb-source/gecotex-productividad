@@ -134,44 +134,49 @@ gecotex-productividad/
 │   ├── config.py             # Settings (pydantic-settings), JWT config
 │   ├── database.py           # SQLAlchemy engine + SessionLocal + Base
 │   ├── auth.py               # bcrypt hash/verify, JWT create/decode
-│   ├── seed.py               # Datos iniciales
+│   ├── seed.py               # Datos iniciales (incluye clientes + FK)
+│   ├── patch_objetivos.py    # Patch startup: recalibra objetivos UP en BD existente
+│   ├── patch_factores.py     # Patch startup: añade factores evaluación si no existen
 │   ├── requirements.txt
 │   ├── models/
-│   │   ├── usuario.py        # RolEnum + salario_bruto_anual + pct_maximo_bonus
+│   │   ├── usuario.py        # RolEnum + SedeEnum + salario_bruto_anual + pct_maximo_bonus
 │   │   ├── tipo_dua.py
 │   │   ├── incrementador.py
-│   │   ├── expediente.py
+│   │   ├── cliente.py        # NUEVO: catálogo de clientes (nombre único, NIF, activo)
+│   │   ├── expediente.py     # cliente_id FK nullable + cliente_nombre (texto libre, sync)
 │   │   ├── sesion_trabajo.py
 │   │   ├── objetivo_mes.py
 │   │   ├── parametros_bonus.py   # LEGACY — ya no se usa activamente
-│   │   ├── config_bonus_global.py  # NUEVO: config semestral (pesos, tramos, etc.)
-│   │   ├── factores_evaluacion.py  # NUEVO: factores areas 2/3/4
-│   │   ├── evaluaciones_bonus.py   # NUEVO: evaluación por empleado × semestre
-│   │   ├── respuestas_factores.py  # NUEVO: notas auto+dirección por factor
+│   │   ├── config_bonus_global.py  # config semestral (pesos, tramos, etc.)
+│   │   ├── factores_evaluacion.py  # factores areas 2/3/4
+│   │   ├── evaluaciones_bonus.py   # evaluación por empleado × semestre
+│   │   ├── respuestas_factores.py  # notas auto+dirección por factor
 │   │   ├── notificacion.py
 │   │   ├── importacion_excel.py
 │   │   └── __init__.py
 │   ├── schemas/
 │   │   ├── usuario.py
-│   │   ├── expediente.py
+│   │   ├── expediente.py     # cliente_id Optional[int] en Base y Update
 │   │   ├── kpis.py
-│   │   └── otros.py          # Incluye schemas del nuevo sistema bonus semestral
+│   │   └── otros.py          # Incluye schemas del sistema bonus semestral
 │   ├── services/
 │   │   ├── calculo_up.py
 │   │   ├── calculo_kpis.py
 │   │   ├── calculo_bonus.py  # REESCRITO: sistema semestral 4 áreas
 │   │   ├── importador_excel.py
-│   │   └── generador_informes.py  # Incluye generar_informe_bonus_semestral()
+│   │   └── generador_informes.py
 │   └── routers/
 │       ├── auth.py
 │       ├── usuarios.py
-│       ├── expedientes.py
+│       ├── expedientes.py    # filtros: año, mes, canal, tipo_trafico, cliente_id, operario_id
+│       ├── clientes.py       # NUEVO: CRUD catálogo clientes (coordinador+)
 │       ├── sesiones.py
 │       ├── tipos_dua.py
 │       ├── incrementadores.py
 │       ├── objetivos.py
 │       ├── kpis.py
-│       ├── bonus.py          # REESCRITO: endpoints sistema semestral
+│       ├── bonus.py          # sistema semestral ~15 endpoints
+│       ├── dashboard.py      # NUEVO: 9 endpoints para DashboardEquipo
 │       ├── importacion.py
 │       ├── informes.py       # /bonus-anual devuelve 410 (reemplazado por semestral)
 │       └── notificaciones.py
@@ -181,38 +186,66 @@ gecotex-productividad/
     ├── tailwind.config.js    # colores gecotex.* definidos aquí
     └── src/
         ├── App.jsx           # Routes con ProtectedRoute por rol
-        ├── api/client.js     # Axios + interceptor JWT + bonusApi completo
+        ├── api/client.js     # Axios + interceptor JWT + todos los *Api exports
         ├── context/
         │   ├── AuthContext.jsx
         │   └── CronometroContext.jsx
         ├── components/
-        │   ├── Layout.jsx
+        │   ├── Layout.jsx    # Sidebar con todos los NavItems por rol
         │   ├── ErrorBoundary.jsx
         │   ├── Cronometro.jsx
         │   └── ...
         └── pages/
             ├── Login.jsx
-            ├── DashboardOperario.jsx   # Incluye tarjeta "Mi Evaluación"
-            ├── DashboardEquipo.jsx
-            ├── Expedientes.jsx
-            ├── ExpedienteDetalle.jsx
-            ├── ExpedienteForm.jsx
+            ├── DashboardOperario.jsx   # Tarjeta "Mi Evaluación" + KPIs personales
+            ├── DashboardEquipo.jsx     # REDISEÑADO: 8 bloques, filtro sede, export Excel
+            ├── Expedientes.jsx         # Filtros: cliente (todos) + empleado (solo admin)
+            ├── ExpedienteDetalle.jsx   # Timeline con fechas editables inline
+            ├── ExpedienteForm.jsx      # Campo cliente = select desde catálogo
+            ├── ExpedienteFormWizard.jsx # Campo cliente = select desde catálogo
             ├── ImportacionExcel.jsx
             ├── TablaMaestraDUAs.jsx
             ├── Objetivos.jsx
+            ├── Clientes.jsx            # NUEVO: CRUD catálogo clientes (coordinador+)
             ├── Bonus.jsx               # Redirige a /evaluaciones-bonus
-            ├── MiEvaluacion.jsx        # NUEVO: autoevaluación del empleado
-            ├── EvaluacionesBonus.jsx   # NUEVO: tabla director
-            ├── FormularioEvalDir.jsx   # NUEVO: evaluación por la dirección
-            ├── ConfigBonus.jsx         # NUEVO: config sistema bonus (admin)
-            ├── Empleados.jsx
+            ├── MiEvaluacion.jsx        # autoevaluación del empleado
+            ├── EvaluacionesBonus.jsx   # tabla director
+            ├── FormularioEvalDir.jsx   # evaluación por la dirección
+            ├── ConfigBonus.jsx         # config sistema bonus (admin) — layout 2 cols + simulador
+            ├── Empleados.jsx           # Incluye selector de sede por operario
             ├── Informes.jsx
             └── Configuracion.jsx
 ```
 
 ---
 
-## Sistema de Bonus Semestral (NUEVO — implementado)
+## Modelo de Datos — Puntos Clave
+
+### Usuario — campo `sede`
+```python
+class SedeEnum(str, Enum):
+    barcelona  = "barcelona"
+    valencia   = "valencia"
+    aeropuerto = "aeropuerto"
+```
+El campo `sede` es nullable; se asigna desde la página `/empleados`. El Dashboard Equipo usa este campo para filtrar métricas por sede (`?sede=barcelona`).
+
+### Cliente — catálogo centralizado
+```python
+class Cliente(Base):
+    __tablename__ = "clientes"
+    id      = Column(Integer, primary_key=True)
+    nombre  = Column(String(200), nullable=False, unique=True)
+    nif     = Column(String(20), nullable=True)
+    activo  = Column(Boolean, default=True)
+```
+- `Expediente.cliente_id` es FK nullable hacia `clientes.id`
+- `Expediente.cliente_nombre` se mantiene como campo de texto (compatibilidad con datos anteriores y dashboard top-clientes). Cuando se guarda con `cliente_id`, el backend sincroniza `cliente_nombre` automáticamente con el nombre del catálogo.
+- El seed crea los 20 clientes del catálogo y asigna `cliente_id` a cada expediente generado.
+
+---
+
+## Sistema de Bonus Semestral
 
 ### Descripción
 
@@ -236,31 +269,87 @@ Bonus € = (salario_anual × pct_max_bonus × % bonus × factor_equipo) / 2
 ### Endpoints API principales
 
 ```
-GET    /bonus/config/{año}/{semestre}     → config del período
-POST   /bonus/config                     → crear config
-PUT    /bonus/config/{id}                → actualizar config
-GET    /bonus/factores                   → lista factores áreas 2/3/4
-POST   /bonus/factores                   → crear factor
-PUT    /bonus/factores/{id}              → editar factor
-DELETE /bonus/factores/{id}             → desactivar factor
-POST   /bonus/evaluaciones/iniciar       → crear evaluaciones período
-GET    /bonus/evaluaciones/{año}/{semestre} → lista evaluaciones
-GET    /bonus/evaluaciones/mia           → mi evaluación (empleado)
-GET    /bonus/evaluaciones/{id}          → detalle evaluación
-PUT    /bonus/evaluaciones/{id}/auto     → guardar autoevaluación
-PUT    /bonus/evaluaciones/{id}/dir      → guardar evaluación dirección
-POST   /bonus/evaluaciones/{id}/cerrar   → cerrar evaluación
-GET    /bonus/factor-equipo/{año}/{semestre} → estado factor equipo
-GET    /bonus/resumen/{año}/{semestre}   → resumen período
-GET    /bonus/exportar/{año}/{semestre}  → Excel descargable
+GET    /bonus/config/{año}/{semestre}
+POST   /bonus/config
+PUT    /bonus/config/{id}
+GET    /bonus/factores
+POST   /bonus/factores
+PUT    /bonus/factores/{id}
+DELETE /bonus/factores/{id}
+POST   /bonus/evaluaciones/iniciar
+GET    /bonus/evaluaciones/{año}/{semestre}
+GET    /bonus/evaluaciones/mia
+GET    /bonus/evaluaciones/{id}
+PUT    /bonus/evaluaciones/{id}/auto
+PUT    /bonus/evaluaciones/{id}/dir
+POST   /bonus/evaluaciones/{id}/cerrar
+GET    /bonus/factor-equipo/{año}/{semestre}
+GET    /bonus/resumen/{año}/{semestre}
+GET    /bonus/exportar/{año}/{semestre}  → Excel
 ```
 
-### Páginas frontend nuevas
+---
 
-- `/mi-evaluacion` — operario ve su evaluación, rellena autoevaluación
-- `/evaluaciones-bonus` — director ve tabla de todas las evaluaciones
-- `/evaluaciones-bonus/:id` — director rellena evaluación de un empleado
-- `/config-bonus` — admin configura parámetros (solo admin)
+## Dashboard Equipo — `/equipo`
+
+Rediseñado completamente. Acceso: coordinador+. Filtros globales: año, mes, sede.
+
+### 8 bloques
+
+1. **KPIs globales** — TeamCircle + 4 tarjetas mini (UPs, expedientes, Factor K, tiempo respuesta)
+2. **Alertas** — operarios bajo rendimiento o con SLA en rojo
+3. **Evolución** — AreaChart UPs + BarChart expedientes por mes
+4. **Distribución** — PieChart por tipo tráfico + BarChart por tipo DUA
+5. **Ranking** — tabla de operarios con fila expandible (detalle KPIs), ordenada por Factor K
+6. **Expedientes en curso** — últimos expedientes activos, auto-refresh cada 5 min
+7. **Top clientes** — toggle tabla/gráfico, top 10 por UPs o por expedientes
+8. **Heatmap + resumen semanal** — actividad por día de la semana con fila TOTAL
+
+### Endpoints dashboard (prefijo `/api/v1/dashboard`, coordinador+)
+
+```
+GET /dashboard/kpis-globales      ?año&mes&sede
+GET /dashboard/alertas            ?año&mes&sede
+GET /dashboard/evolucion          ?año&mes&sede
+GET /dashboard/distribucion       ?año&mes&sede
+GET /dashboard/expedientes-en-curso ?año&mes&sede
+GET /dashboard/top-clientes       ?año&mes&sede&limite
+GET /dashboard/proyeccion         ?año&mes&sede
+GET /dashboard/resumen-semanal    ?año&mes&sede
+GET /dashboard/exportar-excel     ?año&mes&sede  → blob xlsx
+```
+
+### Filtrado por sede
+Todos los endpoints de dashboard aceptan `?sede=barcelona|valencia|aeropuerto`. Lógica: obtener IDs de operarios con esa sede → filtrar expedientes por `operario_id IN (ids)`.
+
+---
+
+## Expedientes — Funcionalidades Clave
+
+### Filtros en GET /expedientes
+```
+?año=2026&mes=6&canal=verde&tipo_trafico=exportacion&cliente_id=5&operario_id=3&skip=0&limit=100
+```
+- `cliente_id`: server-side, todos los roles autenticados
+- `operario_id`: server-side, UI visible solo para admin
+
+### Timeline editable inline (ExpedienteDetalle)
+Los 5 nodos de la línea temporal (Recepción, Apertura, Envío Aduana, Levante, Facturación) son editables directamente:
+- Hover → icono lápiz en el nodo
+- Click → popover flotante con `<input type="datetime-local">` pre-relleno
+- Guardar / Enter → `PATCH /expedientes/{id}` con solo ese campo, actualiza estado local
+- Escape / clic fuera → cierra sin guardar
+- Opción "Borrar fecha" para poner el campo a null
+- Los deltas entre fases y alertas SLA se recalculan en tiempo real
+
+### Campos de fecha en Expediente
+```python
+fecha_recepcion_correo    # nodo 0
+fecha_apertura_dossier    # nodo 1
+fecha_envio_aduana        # nodo 2
+fecha_levante             # nodo 3
+fecha_envio_facturacion   # nodo 4
+```
 
 ---
 
@@ -269,15 +358,23 @@ GET    /bonus/exportar/{año}/{semestre}  → Excel descargable
 ```
 POST   /auth/login
 GET    /auth/me
-GET    /expedientes
+GET    /expedientes              ?año&mes&canal&tipo_trafico&cliente_id&operario_id
 POST   /expedientes
+GET    /expedientes/{id}
+PUT    /expedientes/{id}
+DELETE /expedientes/{id}
+GET    /clientes                 ?solo_activos=true
+POST   /clientes                 (coordinador+)
+PUT    /clientes/{id}            (coordinador+)
+DELETE /clientes/{id}            (coordinador+, soft delete)
 GET    /kpis/operario/{id}
 GET    /kpis/equipo
 GET    /kpis/ranking
 GET    /kpis/suficiencia
+GET    /dashboard/*              (coordinador+, ver sección Dashboard)
 GET    /informes/productividad-mensual  → Excel
 GET    /informes/expedientes            → Excel
-GET    /informes/bonus-anual            → 410 Gone (reemplazado por sistema semestral)
+GET    /informes/bonus-anual            → 410 Gone
 ```
 
 ---
@@ -289,16 +386,18 @@ GET    /informes/bonus-anual            → 410 Gone (reemplazado por sistema se
 UP = up_base + (max(0, num_partidas - tramo_partidas_min) × 0.10) + Σ(up_adicional de cada incrementador)
 ```
 
-### Factor K y Bonus (sistema ANTIGUO — mantenido en KPIs)
+### Factor K
 ```
-K = UP_mes / objetivo_UP
+K = UP_mes / objetivo_UP_mes
 ```
+Objetivos calibrados a 11–16 UP/mes por operario (seed + patch_objetivos.py).
 
-### Ratio Suficiencia (semáforo equipo)
+### Rendimiento de equipo (semáforo)
 ```
 Ratio = UP_oferta / UP_demanda
 < 0.90 → rojo | 0.90–1.10 → naranja | ≥ 1.10 → verde
 ```
+Nota: anteriormente llamado "Suficiencia" — renombrado a "Rendimiento" en la UI.
 
 ---
 
@@ -309,8 +408,11 @@ Ratio = UP_oferta / UP_demanda
 | Ver sus expedientes | ✓ | ✓ | ✓ | ✓ |
 | Ver todos los expedientes | — | ✓ | ✓ | ✓ |
 | Crear/editar expedientes | ✓ | ✓ | ✓ | ✓ |
+| Editar fechas en timeline | ✓ | ✓ | ✓ | ✓ |
 | Gestionar DUAs/incrementadores | — | ✓ | ✓ | ✓ |
-| Ver KPIs equipo/ranking | — | ✓ | ✓ | ✓ |
+| Gestionar catálogo clientes | — | ✓ | ✓ | ✓ |
+| Ver KPIs equipo/ranking/dashboard | — | ✓ | ✓ | ✓ |
+| Filtrar expedientes por empleado (UI) | — | — | — | ✓ |
 | Mi evaluación (autoevaluar) | ✓ | ✓ | ✓ | ✓ |
 | Evaluar equipo (dirección) | — | — | ✓ | ✓ |
 | Configurar bonus/objetivos | — | — | ✓ | ✓ |
@@ -337,55 +439,35 @@ async def lifespan(app: FastAPI):
 app = FastAPI(..., lifespan=lifespan)
 ```
 
-### WPML / wp_icl_translations
-La columna `needs_update` **no existe** en esta versión de WPML — no hacer UPDATE de esa columna.
+### React — Reglas de Hooks en listas
+Al renderizar filas expandibles con `.map()`, usar siempre `<Fragment key={id}>` (no `<>`) para que React rastree correctamente el árbol cuando cambia el número de hijos. Sin key en Fragment → React error #310.
 
 ---
 
-## Bug Resuelto: React Error #310
+## Bugs Resueltos
 
-**Síntoma:** "Minified React error #310" aparecía en páginas al navegar y el retry no funcionaba.
+### React Error #310 — ErrorBoundary
+**Fix:** `retryKey` en estado + `<React.Fragment key={retryKey}>` al montar children → React desmonta y remonta el árbol limpio al hacer retry.
 
-**Causa raíz:** Cuando cualquier error de runtime era capturado por `ErrorBoundary`, React dejaba las fibras del árbol fallido en estado inconsistente. Al hacer retry (`setState({ error: null })`), React reconciliaba los children contra esas fibras corruptas, detectaba discordancia en el número de hooks y lanzaba error #310. El usuario veía este error secundario, no el original.
+### React Error #310 — DashboardEquipo ranking
+**Fix:** `<Fragment key={op.operario_id}>` en el `.map()` de filas expandibles del ranking.
 
-**Fix aplicado (`ErrorBoundary.jsx`):**
-- Añadido `retryKey: 0` al estado
-- En retry: incrementar `retryKey` además de limpiar `error`
-- Los children se envuelven en `<React.Fragment key={retryKey}>` — al cambiar la key, React **desmonta y remonta completamente** el árbol creando fibras nuevas sin historial corrupto
-
----
-
-## Correcciones Recientes (sesión actual)
-
-### Backend
-- `backend/routers/informes.py`: eliminado import de `calcular_bonus_operario` (función eliminada en reescritura del bonus) que causaba `ImportError` al arrancar Railway
-
-### Frontend
-- `frontend/src/pages/Bonus.jsx`: reemplazado por redirect a `/evaluaciones-bonus`
-- `frontend/src/pages/ConfigBonus.jsx`: rediseño completo — layout 2 columnas (config + simulador en vivo), 5 bloques acordeón con colores, barra apilada de pesos, escala visual de tramos, edición de `config_area1` (nuevo — antes no incluido), simulador en tiempo real
-- `frontend/src/components/Layout.jsx`: añadidos "Mi Evaluación" y "Config. Bonus" en sidebar
-- `frontend/src/pages/DashboardOperario.jsx`: añadida tarjeta de evaluación semestral
-- `frontend/src/App.jsx`: añadidas rutas para las 4 páginas nuevas del bonus semestral
-
-### Sistema nuevo bonus semestral (modelos + lógica + UI)
-Implementado completamente en esta sesión:
-- 4 modelos nuevos: `ConfigBonusGlobal`, `FactorEvaluacion`, `EvaluacionBonus`, `RespuestaFactor`
-- `services/calculo_bonus.py` reescrito
-- `routers/bonus.py` reescrito con ~15 endpoints
-- 4 páginas frontend nuevas + modificaciones en 5 existentes
+### cliente_nombre corrupción en sincronización
+Cuando `cliente_id` llega al backend, se sobreescribe `cliente_nombre` con el nombre canónico del catálogo antes de persistir. Así el dashboard "Top clientes" (que agrupa por `cliente_nombre`) no queda fragmentado.
 
 ---
 
 ## Estado de la BD (gecotex.db)
 
 Seed incluye:
-- 8 usuarios con bcrypt
+- 8 usuarios con bcrypt (5 operarios con sede asignada)
 - 7 tipos DUA + 8 incrementadores
-- Parámetros bonus 2024/2025 (legacy) + ConfigBonusGlobal 2026/S1 (nuevo)
+- 20 clientes en catálogo
+- Parámetros bonus 2024/2025 (legacy) + ConfigBonusGlobal 2026/S1
 - 11 FactoresEvaluacion para áreas 2/3/4
 - Evaluación demo en estado 'completada' para Cristian
 - Evaluación demo en estado 'auto_evaluacion' para María
-- ~200 expedientes
+- ~270 expedientes con `cliente_id` asignado
 
 **Reset BD:** borrar `backend/gecotex.db` y reiniciar uvicorn.
 
