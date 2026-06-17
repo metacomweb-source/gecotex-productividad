@@ -1,34 +1,82 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { expedientesApi, sesionesApi } from '../api/client'
-import { useRef } from 'react'
 import { useCronometro } from '../context/CronometroContext'
 import Semaforo from '../components/Semaforo'
-import { ArrowLeft, Pencil, Download, Play, Pause, StopCircle, Mail, Folder, Send, CheckCircle2, Receipt, Clock, AlertTriangle, MoreHorizontal, Plus, Paperclip, Trash2, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Pencil, Download, Play, Pause, StopCircle, Mail, Folder, Send, CheckCircle2, Receipt, Clock, AlertTriangle, MoreHorizontal, Plus, Paperclip, Trash2, RefreshCw, Check, X } from 'lucide-react'
 import { fmtFechaHora, fmtMinutos, fmtUP } from '../utils/formatters'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
-const Timeline = ({ phases }) => {
+const PHASE_FIELDS = [
+  'fecha_recepcion_correo',
+  'fecha_apertura_dossier',
+  'fecha_envio_aduana',
+  'fecha_levante',
+  'fecha_envio_facturacion',
+]
+
+const Timeline = ({ phases, onEdit }) => {
+  const [editing, setEditing] = useState(null)
+  const [value, setValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef(null)
+  const popoverRef = useRef(null)
+
+  useEffect(() => {
+    if (editing === null) return
+    const handleClick = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setEditing(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [editing])
+
+  const startEdit = (i) => {
+    setValue(phases[i].rawDate?.slice(0, 16) || '')
+    setEditing(i)
+    setTimeout(() => inputRef.current?.focus(), 60)
+  }
+
+  const save = async () => {
+    if (editing === null) return
+    setSaving(true)
+    await onEdit(editing, value || null)
+    setSaving(false)
+    setEditing(null)
+  }
+
+  const cancel = () => setEditing(null)
+
+  const fmtDisplay = (rawDate) => {
+    if (!rawDate) return null
+    const d = new Date(rawDate)
+    return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+  }
+
   return (
     <div className="pt-2 pb-4">
-      <div className="grid grid-cols-5 relative">
+      <div className="grid grid-cols-5 relative overflow-visible">
         {/* Connector line background */}
-        <div className="absolute top-[42px] left-[10%] right-[10%] h-0.5 bg-gecotex-border-soft" />
+        <div className="absolute top-[58px] left-[10%] right-[10%] h-0.5 bg-gecotex-border-soft" />
 
         {phases.map((p, i) => {
-          const done = Boolean(p.time)
+          const done = Boolean(p.rawDate)
           const warn = p.warn
+          const isEditing = editing === i
+
           return (
-            <div key={i} className="flex flex-col items-center relative z-10">
+            <div key={i} className="flex flex-col items-center relative z-10 overflow-visible">
               {/* Connector line colored */}
-              {i > 0 && phases[i-1].time && (
+              {i > 0 && phases[i-1].rawDate && (
                 <div className={clsx(
-                  "absolute top-[42px] left-[-50%] right-[50%] h-0.5 z-0",
+                  "absolute top-[58px] left-[-50%] right-[50%] h-0.5 z-0",
                   warn ? "bg-gecotex-red" : "bg-gecotex-green"
                 )} />
               )}
-              
+
               {/* Delta badge */}
               {p.delta && (
                 <div className="absolute top-0 left-[-50%] right-[50%] flex justify-center pointer-events-none">
@@ -41,23 +89,76 @@ const Timeline = ({ phases }) => {
                 </div>
               )}
 
-              {/* Node */}
-              <div className={clsx(
-                "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all mt-4 mb-2 shadow-sm",
-                done ? "bg-white" : "bg-gecotex-bg",
-                warn ? "border-gecotex-red" : (done ? "border-gecotex-green" : "border-gecotex-border")
-              )}>
+              {/* Node — clickable */}
+              <button
+                onClick={() => !isEditing && startEdit(i)}
+                className={clsx(
+                  "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all mt-4 mb-2 shadow-sm group relative",
+                  done ? "bg-white" : "bg-gecotex-bg",
+                  warn ? "border-gecotex-red hover:border-gecotex-red" : (done ? "border-gecotex-green hover:border-gecotex-blue" : "border-gecotex-border hover:border-gecotex-blue"),
+                  "cursor-pointer hover:shadow-md"
+                )}
+                title="Editar fecha"
+              >
                 <p.icon size={20} className={clsx(
+                  "group-hover:opacity-0 transition-opacity absolute",
                   warn ? "text-gecotex-red" : (done ? "text-gecotex-green" : "text-gecotex-ink-muted")
                 )} />
-              </div>
+                <Pencil size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-gecotex-blue absolute" />
+              </button>
 
               <div className={clsx("text-[12.5px] font-bold text-center", done ? "text-gecotex-ink" : "text-gecotex-ink-muted")}>
                 {p.label}
               </div>
-              <div className="text-[11px] text-gecotex-ink-muted font-mono mt-0.5">
-                {p.time || 'Pendiente'}
-              </div>
+
+              {/* Date display / inline editor */}
+              {isEditing ? (
+                <div ref={popoverRef} className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-white border border-gecotex-blue/40 rounded-xl shadow-xl p-3 w-56 flex flex-col gap-2">
+                  <p className="text-[10px] font-bold text-gecotex-ink-muted uppercase tracking-wider">{p.label}</p>
+                  <input
+                    ref={inputRef}
+                    type="datetime-local"
+                    value={value}
+                    onChange={e => setValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel() }}
+                    className="border border-gecotex-border rounded-lg px-2 py-1.5 text-[12px] font-mono w-full focus:outline-none focus:ring-2 focus:ring-gecotex-blue/30"
+                  />
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={save}
+                      disabled={saving}
+                      className="flex-1 flex items-center justify-center gap-1 bg-gecotex-green text-white rounded-lg py-1.5 text-[11px] font-bold hover:bg-green-600 disabled:opacity-50 transition-colors"
+                    >
+                      <Check size={11} /> {saving ? '...' : 'Guardar'}
+                    </button>
+                    <button
+                      onClick={cancel}
+                      className="flex items-center justify-center px-2.5 border border-gecotex-border rounded-lg hover:bg-gecotex-bg transition-colors"
+                    >
+                      <X size={12} className="text-gecotex-ink-muted" />
+                    </button>
+                  </div>
+                  {value && (
+                    <button
+                      onClick={() => { setValue(''); }}
+                      className="text-[10px] text-gecotex-red hover:underline text-center"
+                    >
+                      Borrar fecha
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => startEdit(i)}
+                  className={clsx(
+                    "text-[11px] font-mono mt-0.5 transition-colors flex items-center gap-0.5 group/date",
+                    done ? "text-gecotex-ink-sub hover:text-gecotex-blue" : "text-gecotex-ink-muted/60 hover:text-gecotex-blue"
+                  )}
+                >
+                  {fmtDisplay(p.rawDate) || '+ Añadir'}
+                  <Pencil size={9} className="opacity-0 group-hover/date:opacity-100 transition-opacity" />
+                </button>
+              )}
             </div>
           )
         })}
@@ -131,12 +232,23 @@ export default function ExpedienteDetalle() {
     return `${h}h ${m}m`
   }
 
+  const handleDateEdit = async (phaseIndex, isoValue) => {
+    const field = PHASE_FIELDS[phaseIndex]
+    try {
+      await expedientesApi.actualizar(id, { [field]: isoValue || null })
+      setExp(e => ({ ...e, [field]: isoValue || null }))
+      toast.success('Fecha actualizada')
+    } catch {
+      toast.error('Error al guardar la fecha')
+    }
+  }
+
   const phases = [
-    { icon: Mail, label: 'Recepción', time: exp?.fecha_recepcion_correo?.slice(11, 16), delta: null },
-    { icon: Folder, label: 'Apertura', time: exp?.fecha_apertura_dossier?.slice(11, 16), delta: fmtDelta(exp?.fecha_recepcion_correo, exp?.fecha_apertura_dossier), warn: (new Date(exp?.fecha_apertura_dossier) - new Date(exp?.fecha_recepcion_correo)) / 60000 > 60 },
-    { icon: Send, label: 'Envío Aduana', time: exp?.fecha_envio_aduana?.slice(11, 16), delta: fmtDelta(exp?.fecha_apertura_dossier, exp?.fecha_envio_aduana) },
-    { icon: CheckCircle2, label: 'Levante', time: exp?.fecha_levante?.slice(11, 16), delta: fmtDelta(exp?.fecha_envio_aduana, exp?.fecha_levante) },
-    { icon: Receipt, label: 'Facturación', time: exp?.fecha_envio_facturacion?.slice(11, 16), delta: fmtDelta(exp?.fecha_levante, exp?.fecha_envio_facturacion) },
+    { icon: Mail, label: 'Recepción', rawDate: exp?.fecha_recepcion_correo, delta: null },
+    { icon: Folder, label: 'Apertura', rawDate: exp?.fecha_apertura_dossier, delta: fmtDelta(exp?.fecha_recepcion_correo, exp?.fecha_apertura_dossier), warn: (new Date(exp?.fecha_apertura_dossier) - new Date(exp?.fecha_recepcion_correo)) / 60000 > 60 },
+    { icon: Send, label: 'Envío Aduana', rawDate: exp?.fecha_envio_aduana, delta: fmtDelta(exp?.fecha_apertura_dossier, exp?.fecha_envio_aduana) },
+    { icon: CheckCircle2, label: 'Levante', rawDate: exp?.fecha_levante, delta: fmtDelta(exp?.fecha_envio_aduana, exp?.fecha_levante) },
+    { icon: Receipt, label: 'Facturación', rawDate: exp?.fecha_envio_facturacion, delta: fmtDelta(exp?.fecha_levante, exp?.fecha_envio_facturacion) },
   ]
 
   if (loading) return (
@@ -208,7 +320,7 @@ export default function ExpedienteDetalle() {
       </div>
 
       {/* Timeline Card */}
-      <div className="bg-white rounded-xl border border-gecotex-border-soft shadow-gx-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gecotex-border-soft shadow-gx-sm overflow-visible">
         <div className="px-6 py-4 border-b border-gecotex-border-soft flex justify-between items-center bg-gecotex-bg/30">
           <h3 className="text-[14px] font-bold text-gecotex-ink uppercase tracking-wider">Línea temporal del proceso</h3>
           {phases.some(p => p.warn) && (
@@ -218,7 +330,7 @@ export default function ExpedienteDetalle() {
           )}
         </div>
         <div className="p-8">
-          <Timeline phases={phases} />
+          <Timeline phases={phases} onEdit={handleDateEdit} />
         </div>
       </div>
 
