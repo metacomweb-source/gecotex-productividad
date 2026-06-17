@@ -342,27 +342,16 @@ La columna `needs_update` **no existe** en esta versión de WPML — no hacer UP
 
 ---
 
-## Bug Conocido: React Error #310
+## Bug Resuelto: React Error #310
 
-**Síntoma:** "Minified React error #310" (Rendered more hooks than during the previous render) aparece en algunas páginas al navegar. Al hacer click en "Reintentar" en la pantalla de error, la página carga correctamente.
+**Síntoma:** "Minified React error #310" aparecía en páginas al navegar y el retry no funcionaba.
 
-**Estado:** Sin resolver — causa raíz no identificada con certeza.
+**Causa raíz:** Cuando cualquier error de runtime era capturado por `ErrorBoundary`, React dejaba las fibras del árbol fallido en estado inconsistente. Al hacer retry (`setState({ error: null })`), React reconciliaba los children contra esas fibras corruptas, detectaba discordancia en el número de hooks y lanzaba error #310. El usuario veía este error secundario, no el original.
 
-**Diagnóstico:**
-- El error #310 significa que React detectó más hooks en un render que en el anterior
-- Sucede de forma intermitente al navegar (no en cada carga)
-- El retry (ErrorBoundary remonta el componente limpio) lo soluciona
-- Posible causa: transición del estado de autenticación (`usuario` carga desde localStorage → se verifica con la API) provoca un estado intermedio que confunde el árbol de fibras de React
-- Las páginas nuevas del sistema bonus (MiEvaluacion, EvaluacionesBonus, ConfigBonus) tienen todos los hooks al nivel superior, sin condicionales
-
-**Workaround actual:**
-- `ErrorBoundary.jsx` captura el error y muestra botón "Reintentar" que remonta el componente
-- El usuario solo tiene que hacer click en "Reintentar" una vez
-
-**Para investigar más:**
-- Verificar si el error ocurre específicamente durante la carga inicial (antes de que `authApi.me()` complete)
-- Añadir `key={usuario?.id}` en `<Layout>` en App.jsx podría forzar remontaje limpio al cambiar auth state
-- Revisar `DashboardOperario.jsx` — se añadió `bonusApi.miEvaluacion()` dentro de un useEffect existente; si falla silenciosamente puede afectar renders subsiguientes
+**Fix aplicado (`ErrorBoundary.jsx`):**
+- Añadido `retryKey: 0` al estado
+- En retry: incrementar `retryKey` además de limpiar `error`
+- Los children se envuelven en `<React.Fragment key={retryKey}>` — al cambiar la key, React **desmonta y remonta completamente** el árbol creando fibras nuevas sin historial corrupto
 
 ---
 

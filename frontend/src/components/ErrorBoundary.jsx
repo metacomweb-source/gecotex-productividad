@@ -1,9 +1,10 @@
 import { Component } from 'react'
+import React from 'react'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, retryKey: 0 }
   }
 
   static getDerivedStateFromError(error) {
@@ -41,7 +42,7 @@ export default class ErrorBoundary extends Component {
               ← Volver
             </button>
             <button
-              onClick={() => this.setState({ error: null })}
+              onClick={() => this.setState(s => ({ error: null, retryKey: s.retryKey + 1 }))}
               style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, border:'none', background:'#1F3864', color:'white', fontSize:13, fontWeight:600, cursor:'pointer' }}
             >
               ↺ Reintentar
@@ -51,6 +52,10 @@ export default class ErrorBoundary extends Component {
       )
     }
 
-    return this.props.children
+    return (
+      <React.Fragment key={this.state.retryKey}>
+        {this.props.children}
+      </React.Fragment>
+    )
   }
 }
