@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { kpisApi } from '../api/client'
 import Semaforo from '../components/Semaforo'
 import KpiCard from '../components/KpiCard'
+import AccionesPendientes from '../components/AccionesPendientes'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Users, Sparkles, Shield, CheckCircle, Award, Package, ArrowUp, ArrowDown, MoveRight, Filter, Download } from 'lucide-react'
 import { fmtUP, fmtK, fmtPct, nombreMes } from '../utils/formatters'
@@ -107,6 +108,9 @@ export default function DashboardEquipo() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
+      {/* Acciones pendientes */}
+      <AccionesPendientes />
+
       {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

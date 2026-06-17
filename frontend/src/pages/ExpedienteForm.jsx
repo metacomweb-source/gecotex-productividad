@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Mail, Folder, Send, CheckCircle2, Receipt, Users, Cale
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import Tooltip from '../components/Tooltip'
+import ModalCronometro from '../components/ModalCronometro'
 
 const Section = ({ number, title, subtitle, children }) => (
   <div className="mb-6">
@@ -37,6 +38,7 @@ export default function ExpedienteForm() {
   const [loading, setLoading] = useState(false)
   const [archivoDua, setArchivoDua] = useState(null)
   const [docActual, setDocActual] = useState(null)
+  const [modalCronometro, setModalCronometro] = useState(null)
 
   const [form, setForm] = useState({
     numero_expediente: '',
@@ -147,6 +149,12 @@ export default function ExpedienteForm() {
         } else {
           toast.success('Expediente creado')
         }
+        const enTramitacion = form.fecha_apertura_dossier && !form.fecha_levante
+        if (enTramitacion) {
+          setModalCronometro({ id: r.data.id, numero: form.numero_expediente })
+          setLoading(false)
+          return
+        }
         navigate(`/expedientes/${r.data.id}`)
         return
       }
@@ -155,6 +163,15 @@ export default function ExpedienteForm() {
       toast.error(err.response?.data?.detail || 'Error guardando')
     } finally { setLoading(false) }
   }
+
+  if (modalCronometro) return (
+    <ModalCronometro
+      expedienteId={modalCronometro.id}
+      numeroExpediente={modalCronometro.numero}
+      onConfirm={() => navigate(`/expedientes/${modalCronometro.id}`)}
+      onSkip={() => navigate(`/expedientes/${modalCronometro.id}`)}
+    />
+  )
 
   return (
     <div className="h-full flex flex-col min-h-0 -m-6">

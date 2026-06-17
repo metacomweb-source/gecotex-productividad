@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      usuario, token, loading, login, logout,
+      usuario, setUsuario, token, loading, login, logout,
       isAdmin, isDirector, isCoordinador, isOperario,
       canManageUsers, canSeeTeam, canSeeBonus, canConfigureBonus,
     }}>

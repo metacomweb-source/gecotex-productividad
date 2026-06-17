@@ -33,6 +33,7 @@ export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   me: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
+  completarOnboarding: () => api.post('/auth/completar-onboarding'),
 }
 
 // Expedientes
@@ -65,9 +66,11 @@ export const sesionesApi = {
 // KPIs
 export const kpisApi = {
   operario: (id, params) => api.get(`/kpis/operario/${id}`, { params }),
+  hoy: (id) => api.get(`/kpis/operario/${id}/hoy`),
   equipo: (params) => api.get('/kpis/equipo', { params }),
   suficiencia: (params) => api.get('/kpis/suficiencia', { params }),
   ranking: (params) => api.get('/kpis/ranking', { params }),
+  accionesPendientes: () => api.get('/kpis/acciones-pendientes'),
 }
 
 // Tipos DUA

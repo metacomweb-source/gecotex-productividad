@@ -37,3 +37,13 @@ def logout(current_user: Usuario = Depends(get_current_user)):
 @router.get("/me", response_model=UsuarioResponse)
 def me(current_user: Usuario = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/completar-onboarding")
+def completar_onboarding(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    current_user.onboarding_completado = True
+    db.commit()
+    return {"ok": True}

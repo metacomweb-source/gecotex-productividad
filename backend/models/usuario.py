@@ -36,6 +36,7 @@ class Usuario(Base):
     jornada_horas_dia = Column(Float, default=8.0)
     salario_bruto_anual = Column(Float, nullable=True)
     pct_maximo_bonus = Column(Float, default=0.05)
+    onboarding_completado = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

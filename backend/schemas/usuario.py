@@ -33,6 +33,7 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     id: int
+    onboarding_completado: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

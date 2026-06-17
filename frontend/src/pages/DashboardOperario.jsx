@@ -2,17 +2,49 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCronometro } from '../context/CronometroContext'
-import { kpisApi, expedientesApi, sesionesApi, bonusApi } from '../api/client'
+import { kpisApi, expedientesApi, bonusApi } from '../api/client'
 import KpiCard from '../components/KpiCard'
 import Semaforo from '../components/Semaforo'
+import TarjetaHoy from '../components/TarjetaHoy'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts'
 import { FileText, Plus, Sparkles, Award, Package, Clock, Pause, StopCircle, Search, Filter, ChevronRight, Timer, ChevronDown, ClipboardCheck } from 'lucide-react'
 import { fmtUP, fmtK, fmtPct, fmtFechaHora, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
+import { useCelebraciones } from '../hooks/useCelebraciones'
+
+function textoKpi(tipo, valor) {
+  if (tipo === 'factor_k') {
+    if (valor == null) return null
+    if (valor < 0.70) return 'Estás por debajo de tu objetivo mensual.'
+    if (valor < 0.85) return 'Vas encaminado/a, aún tienes margen para mejorar.'
+    if (valor < 1.00) return 'Casi en el objetivo. Buen ritmo.'
+    return '¡Superando el objetivo mensual!'
+  }
+  if (tipo === 'ups') {
+    if (valor == null) return null
+    const duasEq = Math.round(valor / 1.0)
+    return `Equivale a ~${duasEq} DUAs de exportación básica`
+  }
+  if (tipo === 'ocupacion') {
+    if (valor == null) return null
+    if (valor < 70) return 'Capacidad disponible. Puedes asumir más carga.'
+    if (valor < 90) return 'Ritmo de trabajo equilibrado.'
+    if (valor <= 110) return 'Carga alta pero dentro del límite saludable.'
+    return 'Estás sobrecargado/a. Habla con tu coordinador/a.'
+  }
+  if (tipo === 'incidencia') {
+    if (valor == null) return null
+    if (valor < 10) return 'Muy pocos expedientes con incidencias. Buena calidad.'
+    if (valor <= 20) return 'Nivel de incidencias normal.'
+    return 'Incidencias por encima de la media.'
+  }
+  return null
+}
 
 export default function DashboardOperario() {
   const { usuario } = useAuth()
   const { sesionActiva, segundos, formatearTiempo, finalizar, pausar } = useCronometro()
+  const { celebrar } = useCelebraciones()
   const navigate = useNavigate()
   const now = new Date()
   const [año, setAño] = useState(now.getFullYear())
@@ -21,6 +53,7 @@ export default function DashboardOperario() {
   const [expedientes, setExpedientes] = useState([])
   const [loading, setLoading] = useState(true)
   const [miEval, setMiEval] = useState(null)
+  const [celebradoMes, setCelebradoMes] = useState(false)
 
   useEffect(() => {
     if (!usuario) return
@@ -32,6 +65,12 @@ export default function DashboardOperario() {
       .then(([kpisRes, expsRes]) => {
         setKpis(kpisRes.data)
         setExpedientes(expsRes.data)
+        const k = kpisRes.data?.factor_k
+        const isCurrentMonth = año === now.getFullYear() && mes === (now.getMonth() + 1)
+        if (k >= 1.0 && isCurrentMonth && !celebradoMes) {
+          setCelebradoMes(true)
+          celebrar('objetivo_mes')
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -77,6 +116,9 @@ export default function DashboardOperario() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
+      {/* Tarjeta Hoy */}
+      <TarjetaHoy usuarioId={usuario?.id} nombreUsuario={usuario?.nombre} />
+
       {/* Welcome + Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -126,47 +168,67 @@ export default function DashboardOperario() {
 
       {/* KPI ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          titulo="UPs producidas"
-          ayuda="Las UPs (Unidades Ponderadas) miden la carga de trabajo procesada. Se calculan automáticamente según el tipo de DUA, el número de partidas arancelarias e incrementadores de cada expediente. La barra muestra el progreso hacia tu objetivo."
-          valor={fmtUP(kpis?.up_producidas)}
-          unit={`/ ${kpis?.objetivo_up || '—'}`}
-          subtitulo={kpis?.up_producidas > 0 && kpis?.objetivo_up > 0 ? `${((kpis.up_producidas / kpis.objetivo_up - 1) * 100) >= 0 ? '+' : ''}${((kpis.up_producidas / kpis.objetivo_up - 1) * 100).toFixed(0)}%` : ''}
-          icono={Package}
-          color={isAhead ? 'verde' : 'orange'}
-          progreso={kpis?.pct_cumplimiento}
-          footer={isAhead ? "Objetivo mensual superado ✓" : "Objetivo en progreso…"}
-        />
+        <div className="space-y-1">
+          <KpiCard
+            titulo="UPs producidas"
+            ayuda="Las UPs (Unidades Ponderadas) miden la carga de trabajo procesada. Se calculan automáticamente según el tipo de DUA, el número de partidas arancelarias e incrementadores de cada expediente. La barra muestra el progreso hacia tu objetivo."
+            valor={fmtUP(kpis?.up_producidas)}
+            unit={`/ ${kpis?.objetivo_up || '—'}`}
+            subtitulo={kpis?.up_producidas > 0 && kpis?.objetivo_up > 0 ? `${((kpis.up_producidas / kpis.objetivo_up - 1) * 100) >= 0 ? '+' : ''}${((kpis.up_producidas / kpis.objetivo_up - 1) * 100).toFixed(0)}%` : ''}
+            icono={Package}
+            color={isAhead ? 'verde' : 'orange'}
+            progreso={kpis?.pct_cumplimiento}
+            footer={isAhead ? "Objetivo mensual superado ✓" : "Objetivo en progreso…"}
+          />
+          {textoKpi('ups', kpis?.up_producidas) && (
+            <p className="text-xs text-gecotex-ink-muted px-1">{textoKpi('ups', kpis?.up_producidas)}</p>
+          )}
+        </div>
 
-        <KpiCard
-          titulo="Factor K"
-          ayuda="K = UPs producidas ÷ Objetivo mensual. Un Factor K ≥ 1.0 significa que has alcanzado o superado tu objetivo. El Factor K determina el tramo de bonus que recibirás al final del período."
-          valor={fmtK(kpis?.factor_k)}
-          icono={Sparkles}
-          color={isAhead ? 'verde' : 'orange'}
-          footer={isAhead ? "Objetivo alcanzado — bonus activo" : "Por debajo del umbral de bonus"}
-        />
+        <div className="space-y-1">
+          <KpiCard
+            titulo="Factor K"
+            ayuda="K = UPs producidas ÷ Objetivo mensual. Un Factor K ≥ 1.0 significa que has alcanzado o superado tu objetivo. El Factor K determina el tramo de bonus que recibirás al final del período."
+            valor={fmtK(kpis?.factor_k)}
+            icono={Sparkles}
+            color={isAhead ? 'verde' : 'orange'}
+            footer={isAhead ? "Objetivo alcanzado — bonus activo" : "Por debajo del umbral de bonus"}
+          />
+          {textoKpi('factor_k', kpis?.factor_k) && (
+            <p className="text-xs text-gecotex-ink-muted px-1">{textoKpi('factor_k', kpis?.factor_k)}</p>
+          )}
+        </div>
 
-        <KpiCard
-          titulo="Cumplimiento objetivo"
-          ayuda="Porcentaje del objetivo mensual de UPs alcanzado. Al llegar al 100% has cumplido tu objetivo. Por encima del 110% entras en tramos de bonus superiores."
-          valor={kpis?.pct_cumplimiento != null ? kpis.pct_cumplimiento.toFixed(0) : '—'}
-          unit="%"
-          icono={Award}
-          color={kpis?.pct_cumplimiento >= 100 ? 'verde' : kpis?.pct_cumplimiento >= 85 ? 'blue' : 'naranja'}
-          progreso={Math.min(100, kpis?.pct_cumplimiento || 0)}
-          footer="% del objetivo UP alcanzado este mes"
-        />
+        <div className="space-y-1">
+          <KpiCard
+            titulo="Tasa ocupación"
+            ayuda="Porcentaje del tiempo disponible dedicado a expedientes. Se calcula con el tiempo registrado mediante el cronómetro. Una tasa entre 70-90% es el rango óptimo."
+            valor={kpis?.tasa_ocupacion != null ? kpis.tasa_ocupacion.toFixed(0) : '—'}
+            unit="%"
+            icono={Award}
+            color={kpis?.tasa_ocupacion >= 90 ? 'naranja' : kpis?.tasa_ocupacion >= 70 ? 'verde' : 'blue'}
+            progreso={Math.min(100, kpis?.tasa_ocupacion || 0)}
+            footer="% del tiempo disponible utilizado"
+          />
+          {textoKpi('ocupacion', kpis?.tasa_ocupacion) && (
+            <p className="text-xs text-gecotex-ink-muted px-1">{textoKpi('ocupacion', kpis?.tasa_ocupacion)}</p>
+          )}
+        </div>
 
-        <KpiCard
-          titulo="Expedientes"
-          ayuda="Número total de expedientes aduaneros procesados en el período seleccionado."
-          valor={kpis?.num_expedientes ?? 0}
-          subtitulo="este mes"
-          icono={FileText}
-          color="navy"
-          footer={`Media ${(kpis?.up_producidas / (kpis?.num_expedientes || 1)).toFixed(1)} UPs por expediente`}
-        />
+        <div className="space-y-1">
+          <KpiCard
+            titulo="Tasa incidencia"
+            ayuda="Porcentaje de expedientes con canal naranja o rojo sobre el total procesado. Una tasa baja refleja buena calidad en la gestión documental."
+            valor={kpis?.tasa_incidencia != null ? kpis.tasa_incidencia.toFixed(0) : '—'}
+            unit="%"
+            icono={FileText}
+            color={kpis?.tasa_incidencia > 20 ? 'naranja' : 'navy'}
+            footer={`${kpis?.num_expedientes ?? 0} expedientes este mes`}
+          />
+          {textoKpi('incidencia', kpis?.tasa_incidencia) && (
+            <p className="text-xs text-gecotex-ink-muted px-1">{textoKpi('incidencia', kpis?.tasa_incidencia)}</p>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}

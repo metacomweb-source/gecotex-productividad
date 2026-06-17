@@ -2,12 +2,14 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import WizardOnboarding from './components/WizardOnboarding'
 import Login from './pages/Login'
 import DashboardOperario from './pages/DashboardOperario'
 import DashboardEquipo from './pages/DashboardEquipo'
 import Expedientes from './pages/Expedientes'
 import ExpedienteDetalle from './pages/ExpedienteDetalle'
 import ExpedienteForm from './pages/ExpedienteForm'
+import ExpedienteFormWizard from './pages/ExpedienteFormWizard'
 import ImportacionExcel from './pages/ImportacionExcel'
 import TablaMaestraDUAs from './pages/TablaMaestraDUAs'
 import Objetivos from './pages/Objetivos'
@@ -42,13 +44,15 @@ export default function App() {
   if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gecotex-primary" /></div>
 
   return (
-    <Routes>
+    <>
+      {usuario && !usuario.onboarding_completado && <WizardOnboarding />}
+      <Routes>
       <Route path="/login" element={usuario ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/" element={<DefaultRedirect />} />
 
       <Route path="/dashboard" element={<ProtectedRoute><Layout><ErrorBoundary><DashboardOperario /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/expedientes" element={<ProtectedRoute><Layout><ErrorBoundary><Expedientes /></ErrorBoundary></Layout></ProtectedRoute>} />
-      <Route path="/expedientes/nuevo" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteForm /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/expedientes/nuevo" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteFormWizard /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/expedientes/:id" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteDetalle /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/expedientes/:id/editar" element={<ProtectedRoute><Layout><ErrorBoundary><ExpedienteForm /></ErrorBoundary></Layout></ProtectedRoute>} />
 
@@ -67,5 +71,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   )
 }
