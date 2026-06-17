@@ -2,7 +2,7 @@ import random
 from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
 from auth import hash_password
-from models.usuario import Usuario, RolEnum, DepartamentoEnum
+from models.usuario import Usuario, RolEnum, DepartamentoEnum, SedeEnum
 from models.tipo_dua import TipoDua, TipoTraficoEnum
 from models.incrementador import Incrementador
 from models.expediente import Expediente, CanalEnum, OrigenEnum
@@ -41,19 +41,19 @@ def cargar_seed(db: Session):
          "rol": RolEnum.coordinador, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2019, 6, 1)},
         {"nombre": "Cristian", "apellidos": "López", "email": "cristian@gecotex.es", "password": "demo123",
          "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 9, 1),
-         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05},
+         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05, "sede": SedeEnum.barcelona},
         {"nombre": "María", "apellidos": "Fernández", "email": "maria@gecotex.es", "password": "demo123",
          "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2021, 1, 15),
-         "salario_bruto_anual": 22000.0, "pct_maximo_bonus": 0.05},
+         "salario_bruto_anual": 22000.0, "pct_maximo_bonus": 0.05, "sede": SedeEnum.barcelona},
         {"nombre": "Jorge", "apellidos": "Pérez", "email": "jorge@gecotex.es", "password": "demo123",
          "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2019, 11, 1),
-         "salario_bruto_anual": 23000.0, "pct_maximo_bonus": 0.05},
+         "salario_bruto_anual": 23000.0, "pct_maximo_bonus": 0.05, "sede": SedeEnum.valencia},
         {"nombre": "Silvia", "apellidos": "Romero", "email": "silvia@gecotex.es", "password": "demo123",
          "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2022, 4, 1),
-         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05},
+         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05, "sede": SedeEnum.valencia},
         {"nombre": "Ana", "apellidos": "Torres", "email": "ana@gecotex.es", "password": "demo123",
          "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 7, 1),
-         "salario_bruto_anual": 21500.0, "pct_maximo_bonus": 0.05},
+         "salario_bruto_anual": 21500.0, "pct_maximo_bonus": 0.05, "sede": SedeEnum.aeropuerto},
     ]
     usuarios = []
     for u_data in usuarios_data:
@@ -64,6 +64,7 @@ def cargar_seed(db: Session):
             password_hash=hash_password(u_data["password"]),
             rol=u_data["rol"],
             departamento=u_data.get("departamento"),
+            sede=u_data.get("sede"),
             fecha_incorporacion=u_data.get("fecha_incorporacion"),
             activo=True,
             jornada_horas_dia=8.0,
@@ -127,11 +128,20 @@ def cargar_seed(db: Session):
 
     # --- OPERARIOS Y OBJETIVOS ---
     operarios = [u for u in usuarios if u.rol == RolEnum.operario]
-    base_objetivo_up = 250.0  # Ajustado a nuevas UPs
+
+    # Objetivos calibrados: ~9 exp/mes × ~1.7 UP/exp ≈ 15 UPs/mes por operario
+    # Variación por operario para Factor K diverso (0.70–1.20)
+    OBJETIVO_BASE = {
+        "cristian@gecotex.es": 14.0,
+        "maria@gecotex.es":    12.0,
+        "jorge@gecotex.es":    16.0,
+        "silvia@gecotex.es":   13.0,
+        "ana@gecotex.es":      11.0,
+    }
 
     ahora = datetime.now()
     meses_objetivo = []
-    for i in range(3, -1, -1):
+    for i in range(5, -1, -1):
         mes_objetivo = ahora.month - i
         año_objetivo = ahora.year
         while mes_objetivo <= 0:
@@ -139,15 +149,17 @@ def cargar_seed(db: Session):
             año_objetivo -= 1
         meses_objetivo.append((año_objetivo, mes_objetivo))
 
+    random.seed(42)
     for op in operarios:
+        base = OBJETIVO_BASE.get(op.email, 14.0)
         for año_obj, mes_obj in meses_objetivo:
+            variacion = random.uniform(0.88, 1.12)
             obj = ObjetivoMes(
                 operario_id=op.id,
                 año=año_obj,
                 mes=mes_obj,
-                objetivo_up=base_objetivo_up,
+                objetivo_up=round(base * variacion, 1),
                 objetivo_tiempo_respuesta_horas=2.0,
-                objetivo_tasa_incidencia_max=15.0,
                 objetivo_tiempo_facturacion_horas=24.0,
             )
             db.add(obj)
@@ -160,6 +172,7 @@ def cargar_seed(db: Session):
 
     from services.calculo_up import calcular_up, calcular_partidas_adicionales, calcular_valor_facturacion
 
+    random.seed(99)
     contador = 1
     for año_exp, mes_exp in meses_objetivo:
         num_exp_mes = 45

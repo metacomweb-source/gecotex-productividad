@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date, datetime
-from models.usuario import RolEnum, DepartamentoEnum
+from models.usuario import RolEnum, DepartamentoEnum, SedeEnum
 
 
 class UsuarioBase(BaseModel):
@@ -10,6 +10,7 @@ class UsuarioBase(BaseModel):
     email: EmailStr
     rol: RolEnum
     departamento: Optional[DepartamentoEnum] = None
+    sede: Optional[SedeEnum] = None
     fecha_incorporacion: Optional[date] = None
     activo: bool = True
     jornada_horas_dia: float = 8.0
@@ -27,6 +28,7 @@ class UsuarioUpdate(BaseModel):
     email: Optional[EmailStr] = None
     rol: Optional[RolEnum] = None
     departamento: Optional[DepartamentoEnum] = None
+    sede: Optional[SedeEnum] = None
     fecha_incorporacion: Optional[date] = None
     activo: Optional[bool] = None
     jornada_horas_dia: Optional[float] = None

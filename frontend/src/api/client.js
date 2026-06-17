@@ -156,3 +156,16 @@ export const notificacionesApi = {
   marcarLeida: (id) => api.put(`/notificaciones/${id}/leer`),
   marcarTodas: () => api.put('/notificaciones/leer-todas'),
 }
+
+// Dashboard equipo
+export const dashboardApi = {
+  kpisGlobales:       (p) => api.get('/dashboard/kpis-globales', { params: p }),
+  alertas:            (p) => api.get('/dashboard/alertas', { params: p }),
+  evolucion:          (p) => api.get('/dashboard/evolucion', { params: p }),
+  distribucion:       (p) => api.get('/dashboard/distribucion', { params: p }),
+  expedientesEnCurso: (p) => api.get('/dashboard/expedientes-en-curso', { params: p }),
+  topClientes:        (p) => api.get('/dashboard/top-clientes', { params: p }),
+  proyeccion:         (p) => api.get('/dashboard/proyeccion', { params: p }),
+  resumenSemanal:     (p) => api.get('/dashboard/resumen-semanal', { params: p }),
+  exportarExcel:      (p) => api.get('/dashboard/exportar-excel', { params: p, responseType: 'blob' }),
+}

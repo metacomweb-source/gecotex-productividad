@@ -74,7 +74,7 @@ export default function Layout({ children }) {
           <NavItem to="/expedientes" icon={FileText} label="Expedientes" collapsed={collapsed} />
           {isCoordinador && (
             <>
-              <NavItem to="/equipo" icon={Users} label="Dashboard equipo" collapsed={collapsed} />
+              <NavItem to="/equipo" icon={Users} label="Dashboard" collapsed={collapsed} />
               <NavItem to="/objetivos" icon={Target} label="Objetivos" collapsed={collapsed} />
               <NavItem to="/tabla-maestra" icon={Database} label="DUAs y tarifas" collapsed={collapsed} />
               <NavItem to="/importacion" icon={Upload} label="Importar Excel" collapsed={collapsed} />

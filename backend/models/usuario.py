@@ -21,6 +21,12 @@ class DepartamentoEnum(str, enum.Enum):
     rrhh = "rrhh"
 
 
+class SedeEnum(str, enum.Enum):
+    barcelona  = "barcelona"
+    valencia   = "valencia"
+    aeropuerto = "aeropuerto"
+
+
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -31,6 +37,7 @@ class Usuario(Base):
     password_hash = Column(String, nullable=False)
     rol = Column(Enum(RolEnum), nullable=False)
     departamento = Column(String, nullable=True)
+    sede = Column(Enum(SedeEnum), nullable=True)
     fecha_incorporacion = Column(Date, nullable=True)
     activo = Column(Boolean, default=True)
     jornada_horas_dia = Column(Float, default=8.0)
