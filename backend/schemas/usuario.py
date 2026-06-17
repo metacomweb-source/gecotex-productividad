@@ -13,6 +13,8 @@ class UsuarioBase(BaseModel):
     fecha_incorporacion: Optional[date] = None
     activo: bool = True
     jornada_horas_dia: float = 8.0
+    salario_bruto_anual: Optional[float] = None
+    pct_maximo_bonus: float = 0.05
 
 
 class UsuarioCreate(UsuarioBase):
@@ -28,6 +30,8 @@ class UsuarioUpdate(BaseModel):
     fecha_incorporacion: Optional[date] = None
     activo: Optional[bool] = None
     jornada_horas_dia: Optional[float] = None
+    salario_bruto_anual: Optional[float] = None
+    pct_maximo_bonus: Optional[float] = None
     password: Optional[str] = None
 
 

@@ -35,6 +35,8 @@ def crear_usuario(
         fecha_incorporacion=data.fecha_incorporacion,
         activo=data.activo,
         jornada_horas_dia=data.jornada_horas_dia,
+        salario_bruto_anual=data.salario_bruto_anual,
+        pct_maximo_bonus=data.pct_maximo_bonus,
     )
     db.add(usuario)
     db.commit()
