@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+import os
+import aiofiles
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database import get_db
@@ -9,6 +12,8 @@ from models.tipo_dua import TipoDua
 from models.incrementador import Incrementador
 from schemas.expediente import ExpedienteCreate, ExpedienteUpdate, ExpedienteResponse
 from services.calculo_up import calcular_up, calcular_partidas_adicionales, calcular_valor_facturacion
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 
 router = APIRouter(prefix="/expedientes", tags=["expedientes"])
 
@@ -184,3 +189,64 @@ def eliminar_expediente(
     db.delete(exp)
     db.commit()
     return {"message": "Expediente eliminado"}
+
+
+def _get_exp_or_404(db: Session, expediente_id: int, current_user: Usuario) -> Expediente:
+    exp = db.query(Expediente).filter(Expediente.id == expediente_id).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Expediente no encontrado")
+    if not _puede_ver(current_user, exp):
+        raise HTTPException(status_code=403, detail="Sin permisos")
+    return exp
+
+
+@router.post("/{expediente_id}/documento")
+async def subir_documento(
+    expediente_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    exp = _get_exp_or_404(db, expediente_id, current_user)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    if exp.documento_dua_nombre:
+        old = os.path.join(UPLOAD_DIR, f"{expediente_id}_{exp.documento_dua_nombre}")
+        if os.path.exists(old):
+            os.remove(old)
+    dest = os.path.join(UPLOAD_DIR, f"{expediente_id}_{file.filename}")
+    async with aiofiles.open(dest, "wb") as f:
+        await f.write(await file.read())
+    exp.documento_dua_nombre = file.filename
+    db.commit()
+    return {"documento_dua_nombre": file.filename}
+
+
+@router.get("/{expediente_id}/documento")
+def descargar_documento(
+    expediente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    exp = _get_exp_or_404(db, expediente_id, current_user)
+    if not exp.documento_dua_nombre:
+        raise HTTPException(status_code=404, detail="Sin documento adjunto")
+    path = os.path.join(UPLOAD_DIR, f"{expediente_id}_{exp.documento_dua_nombre}")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado en servidor")
+    return FileResponse(path, filename=exp.documento_dua_nombre)
+
+
+@router.delete("/{expediente_id}/documento")
+def eliminar_documento(
+    expediente_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    exp = _get_exp_or_404(db, expediente_id, current_user)
+    if exp.documento_dua_nombre:
+        path = os.path.join(UPLOAD_DIR, f"{expediente_id}_{exp.documento_dua_nombre}")
+        if os.path.exists(path):
+            os.remove(path)
+        exp.documento_dua_nombre = None
+        db.commit()
+    return {"ok": True}

@@ -44,6 +44,7 @@ class Expediente(Base):
     up_calculadas = Column(Float, nullable=True)
     valor_facturacion = Column(Float, nullable=True)
     notas = Column(Text, nullable=True)
+    documento_dua_nombre = Column(String, nullable=True)
     origen = Column(Enum(OrigenEnum), default=OrigenEnum.manual)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

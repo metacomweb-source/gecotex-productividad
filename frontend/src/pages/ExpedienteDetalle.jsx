@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { expedientesApi, sesionesApi } from '../api/client'
+import { useRef } from 'react'
 import { useCronometro } from '../context/CronometroContext'
 import Semaforo from '../components/Semaforo'
-import { ArrowLeft, Pencil, Download, Play, Pause, StopCircle, Mail, Folder, Send, CheckCircle2, Receipt, Clock, AlertTriangle, MoreHorizontal, Plus } from 'lucide-react'
+import { ArrowLeft, Pencil, Download, Play, Pause, StopCircle, Mail, Folder, Send, CheckCircle2, Receipt, Clock, AlertTriangle, MoreHorizontal, Plus, Paperclip, Trash2, RefreshCw } from 'lucide-react'
 import { fmtFechaHora, fmtMinutos, fmtUP } from '../utils/formatters'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -72,6 +73,7 @@ export default function ExpedienteDetalle() {
   const [exp, setExp] = useState(null)
   const [sesiones, setSesiones] = useState([])
   const [loading, setLoading] = useState(true)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     Promise.all([
@@ -89,6 +91,35 @@ export default function ExpedienteDetalle() {
   const handleIniciar = async () => {
     try { await iniciar(+id, exp?.numero_expediente) }
     catch (err) { toast.error(err.response?.data?.detail || 'Error al iniciar cronómetro') }
+  }
+
+  const handleDescargarDoc = async () => {
+    try {
+      const r = await expedientesApi.descargarDocumento(id)
+      const url = URL.createObjectURL(r.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = exp.documento_dua_nombre
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast.error('Error al descargar el documento') }
+  }
+
+  const handleEliminarDoc = async () => {
+    try {
+      await expedientesApi.eliminarDocumento(id)
+      setExp(e => ({ ...e, documento_dua_nombre: null }))
+      toast.success('Documento eliminado')
+    } catch { toast.error('Error al eliminar el documento') }
+  }
+
+  const handleSubirDoc = async (file) => {
+    if (!file) return
+    try {
+      await expedientesApi.subirDocumento(id, file)
+      setExp(e => ({ ...e, documento_dua_nombre: file.name }))
+      toast.success('Documento adjuntado')
+    } catch { toast.error('Error al subir el documento') }
   }
 
   const fmtDelta = (a, b) => {
@@ -283,14 +314,40 @@ export default function ExpedienteDetalle() {
              </div>
           </div>
 
-          <div className="bg-[#FFF4ED] border border-[#FFE7D9] rounded-xl p-5">
-             <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={18} className="text-gecotex-orange" />
-                <h4 className="text-[13px] font-bold text-[#8a4a14]">Atención requerida</h4>
-             </div>
-             <p className="text-[12px] text-[#a85614] leading-relaxed">
-                Este expediente tiene un cliente premium con SLA reforzado. Se recomienda priorizar el <b>cierre y envío a facturación</b> para cumplir objetivos.
-             </p>
+          <div className="bg-white rounded-xl border border-gecotex-border-soft shadow-gx-sm p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Paperclip size={16} className="text-gecotex-blue" />
+              <h3 className="text-[12px] font-bold text-gecotex-ink-muted uppercase tracking-widest">Documento DUA</h3>
+            </div>
+            {exp.documento_dua_nombre ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-gecotex-blue-light rounded-lg">
+                  <Paperclip size={13} className="text-gecotex-blue shrink-0" />
+                  <span className="text-[12px] font-medium text-gecotex-ink flex-1 truncate">{exp.documento_dua_nombre}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleDescargarDoc} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold bg-gecotex-blue text-white rounded-lg hover:bg-gecotex-navy transition-colors">
+                    <Download size={13} /> Descargar
+                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} className="p-1.5 border border-gecotex-border rounded-lg hover:bg-gecotex-bg transition-colors" title="Reemplazar">
+                    <RefreshCw size={13} className="text-gecotex-ink-muted" />
+                  </button>
+                  <button onClick={handleEliminarDoc} className="p-1.5 border border-gecotex-red/30 rounded-lg hover:bg-gecotex-red-soft transition-colors" title="Eliminar">
+                    <Trash2 size={13} className="text-gecotex-red" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gecotex-border rounded-xl text-[12px] font-medium text-gecotex-ink-muted hover:border-gecotex-blue hover:text-gecotex-blue hover:bg-gecotex-blue-light/30 transition-all">
+                <Paperclip size={14} /> Adjuntar documento DUA
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={e => handleSubirDoc(e.target.files[0])}
+            />
           </div>
         </div>
       </div>

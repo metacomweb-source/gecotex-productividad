@@ -42,6 +42,15 @@ export const expedientesApi = {
   crear: (data) => api.post('/expedientes', data),
   actualizar: (id, data) => api.put(`/expedientes/${id}`, data),
   eliminar: (id) => api.delete(`/expedientes/${id}`),
+  subirDocumento: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.post(`/expedientes/${id}/documento`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  descargarDocumento: (id) => api.get(`/expedientes/${id}/documento`, { responseType: 'blob' }),
+  eliminarDocumento: (id) => api.delete(`/expedientes/${id}/documento`),
 }
 
 // Sesiones

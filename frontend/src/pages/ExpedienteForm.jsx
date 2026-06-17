@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { expedientesApi, tiposDuaApi, incrementadoresApi, usuariosApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { calcularUP, calcularValorFacturacion } from '../utils/calculos'
-import { ArrowLeft, Save, Mail, Folder, Send, CheckCircle2, Receipt, Users, Calendar, Shield, Sparkles, Info, ChevronRight, Package } from 'lucide-react'
+import { ArrowLeft, Save, Mail, Folder, Send, CheckCircle2, Receipt, Users, Calendar, Shield, Sparkles, Info, ChevronRight, Package, Paperclip, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import Tooltip from '../components/Tooltip'
@@ -35,6 +35,8 @@ export default function ExpedienteForm() {
   const [incrementadores, setIncrementadores] = useState([])
   const [operarios, setOperarios] = useState([])
   const [loading, setLoading] = useState(false)
+  const [archivoDua, setArchivoDua] = useState(null)
+  const [docActual, setDocActual] = useState(null)
 
   const [form, setForm] = useState({
     numero_expediente: '',
@@ -85,6 +87,7 @@ export default function ExpedienteForm() {
           servicios_adicionales: e.servicios_adicionales || [],
           notas: e.notas || '',
         })
+        setDocActual(e.documento_dua_nombre || null)
       })
     }
   }, [id, isCoordinador])
@@ -130,10 +133,20 @@ export default function ExpedienteForm() {
       }
       if (isEdit) {
         await expedientesApi.actualizar(id, payload)
-        toast.success('Expediente actualizado')
+        if (archivoDua) {
+          await expedientesApi.subirDocumento(id, archivoDua)
+          toast.success('Expediente y documento actualizados')
+        } else {
+          toast.success('Expediente actualizado')
+        }
       } else {
         const r = await expedientesApi.crear(payload)
-        toast.success('Expediente creado')
+        if (archivoDua) {
+          await expedientesApi.subirDocumento(r.data.id, archivoDua)
+          toast.success('Expediente creado con documento adjunto')
+        } else {
+          toast.success('Expediente creado')
+        }
         navigate(`/expedientes/${r.data.id}`)
         return
       }
@@ -382,13 +395,46 @@ export default function ExpedienteForm() {
                 </div>
               </Section>
 
+              <Section number="5" title="Documento DUA" subtitle="Adjunta el archivo de la DUA para centralizar la información del expediente (opcional)">
+                {docActual && !archivoDua && (
+                  <div className="flex items-center gap-3 p-3 bg-gecotex-blue-light border border-gecotex-blue/20 rounded-lg mb-3">
+                    <Paperclip size={15} className="text-gecotex-blue shrink-0" />
+                    <span className="text-[13px] font-medium text-gecotex-ink flex-1 truncate">{docActual}</span>
+                    <span className="text-[11px] text-gecotex-ink-muted">Archivo actual</span>
+                  </div>
+                )}
+                {archivoDua ? (
+                  <div className="flex items-center gap-3 p-3 bg-gecotex-green-soft border border-gecotex-green/20 rounded-lg">
+                    <Paperclip size={15} className="text-gecotex-green shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-gecotex-ink truncate">{archivoDua.name}</p>
+                      <p className="text-[11px] text-gecotex-ink-muted">{(archivoDua.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <button type="button" onClick={() => setArchivoDua(null)} className="p-1 hover:bg-gecotex-green/10 rounded transition-colors">
+                      <X size={14} className="text-gecotex-ink-muted" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-3 p-4 border-2 border-dashed border-gecotex-border rounded-xl cursor-pointer hover:border-gecotex-blue hover:bg-gecotex-blue-light/30 transition-all">
+                    <Paperclip size={18} className="text-gecotex-ink-muted" />
+                    <div>
+                      <p className="text-[13px] font-medium text-gecotex-ink">
+                        {docActual ? 'Reemplazar documento' : 'Adjuntar documento DUA'}
+                      </p>
+                      <p className="text-[11px] text-gecotex-ink-muted">PDF, imágenes, Excel… cualquier formato</p>
+                    </div>
+                    <input type="file" className="hidden" onChange={e => setArchivoDua(e.target.files[0] || null)} />
+                  </label>
+                )}
+              </Section>
+
               <div className="space-y-2">
                 <label className="label">Notas y observaciones</label>
-                <textarea 
-                  className="input-field resize-none h-24" 
-                  value={form.notas} 
-                  onChange={e => setForm(f => ({...f, notas: e.target.value}))} 
-                  placeholder="Detalles adicionales sobre la tramitación..." 
+                <textarea
+                  className="input-field resize-none h-24"
+                  value={form.notas}
+                  onChange={e => setForm(f => ({...f, notas: e.target.value}))}
+                  placeholder="Detalles adicionales sobre la tramitación..."
                 />
               </div>
             </form>

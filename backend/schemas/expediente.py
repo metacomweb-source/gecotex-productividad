@@ -49,6 +49,7 @@ class ExpedienteResponse(ExpedienteBase):
     origen: OrigenEnum
     created_at: datetime
     updated_at: Optional[datetime] = None
+    documento_dua_nombre: Optional[str] = None
     operario_nombre: Optional[str] = None
     tipo_dua_nombre: Optional[str] = None
 
