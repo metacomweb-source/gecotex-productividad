@@ -271,14 +271,18 @@ export default function ConfigBonus() {
 
   const handleSave = async () => {
     if (!pesosSuman) { toast.error('Los pesos de las 4 áreas deben sumar 100%'); return }
-    setSaving(true); setShowModal(false)
+    setSaving(true)
+    setShowModal(false)
     try {
       const payload = {
         año, semestre,
-        fecha_inicio: form.fecha_inicio, fecha_fin: form.fecha_fin,
+        fecha_inicio: form.fecha_inicio,
+        fecha_fin: form.fecha_fin,
         antiguedad_minima_meses: parseInt(form.antiguedad_minima_meses),
-        peso_area1: form.peso_area1, peso_area2: form.peso_area2,
-        peso_area3: form.peso_area3, peso_area4: form.peso_area4,
+        peso_area1: form.peso_area1,
+        peso_area2: form.peso_area2,
+        peso_area3: form.peso_area3,
+        peso_area4: form.peso_area4,
         peso_auto_evaluacion: form.peso_auto_evaluacion,
         peso_dir_evaluacion: Math.round((1 - form.peso_auto_evaluacion) * 100) / 100,
         factor_equipo_activo: form.factor_equipo_activo,
@@ -287,26 +291,15 @@ export default function ConfigBonus() {
         tabla_tramos_escalonados: form.tabla_tramos,
         config_area1: form.config_area1,
       }
-      if (config) {
-        await api.put(`/bonus/config/${config.id}`, payload)
-      } else {
-        try {
-          await api.post('/bonus/config', payload)
-        } catch (postErr) {
-          if (postErr.response?.status === 400) {
-            const cfgR = await api.get(`/bonus/config/${año}/${semestre}`)
-            setConfig(cfgR.data)
-            await api.put(`/bonus/config/${cfgR.data.id}`, payload)
-          } else {
-            throw postErr
-          }
-        }
-      }
+      const r = await api.put(`/bonus/config/${año}/${semestre}`, payload)
+      setConfig(r.data)
       toast.success('Configuración guardada')
       await cargar()
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al guardar')
-    } finally { setSaving(false) }
+      toast.error(e.response?.data?.detail || 'Error al guardar la configuración')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleToggleFactor = async (f) => {

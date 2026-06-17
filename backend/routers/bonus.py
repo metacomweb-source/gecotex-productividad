@@ -56,6 +56,52 @@ def obtener_config(
     return _config_to_response(cfg)
 
 
+@router.put("/config/{año}/{semestre}", response_model=ConfigBonusResponse)
+def upsert_config(
+    año: int,
+    semestre: int,
+    data: ConfigBonusCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_min_role(RolEnum.director)),
+):
+    from sqlalchemy.orm.attributes import flag_modified
+    cfg = db.query(ConfigBonusGlobal).filter(
+        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+    ).first()
+    if cfg:
+        update_fields = data.model_dump(exclude={"año", "semestre"})
+        for key, value in update_fields.items():
+            if key in ("fecha_inicio", "fecha_fin") and value:
+                setattr(cfg, key, date.fromisoformat(value))
+            else:
+                setattr(cfg, key, value)
+        flag_modified(cfg, "tabla_tramos_escalonados")
+        flag_modified(cfg, "config_area1")
+    else:
+        cfg = ConfigBonusGlobal(
+            año=año,
+            semestre=semestre,
+            fecha_inicio=date.fromisoformat(data.fecha_inicio),
+            fecha_fin=date.fromisoformat(data.fecha_fin),
+            antiguedad_minima_meses=data.antiguedad_minima_meses,
+            factor_equipo_activo=data.factor_equipo_activo,
+            factor_equipo_porcentaje=data.factor_equipo_porcentaje,
+            factor_equipo_meses_minimos=data.factor_equipo_meses_minimos,
+            peso_area1=data.peso_area1,
+            peso_area2=data.peso_area2,
+            peso_area3=data.peso_area3,
+            peso_area4=data.peso_area4,
+            peso_auto_evaluacion=data.peso_auto_evaluacion,
+            peso_dir_evaluacion=data.peso_dir_evaluacion,
+            tabla_tramos_escalonados=data.tabla_tramos_escalonados or DEFAULT_TRAMOS,
+            config_area1=data.config_area1 or DEFAULT_CONFIG_AREA1,
+        )
+        db.add(cfg)
+    db.commit()
+    db.refresh(cfg)
+    return _config_to_response(cfg)
+
+
 @router.post("/config", response_model=ConfigBonusResponse, status_code=status.HTTP_201_CREATED)
 def crear_config(
     data: ConfigBonusCreate,
