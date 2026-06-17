@@ -83,12 +83,32 @@ export const objetivosApi = {
   actualizar: (id, data) => api.put(`/objetivos/${id}`, data),
 }
 
-// Bonus
+// Bonus (sistema nuevo semestral)
 export const bonusApi = {
-  config: (año) => api.get(`/bonus/config/${año}`),
-  upsertConfig: (data) => api.put('/bonus/config', data),
-  tabla: (año) => api.get(`/bonus/${año}`),
-  operario: (id) => api.get(`/bonus/operario/${id}`),
+  // Config
+  config: (año, semestre) => api.get(`/bonus/config/${año}/${semestre}`),
+  crearConfig: (data) => api.post('/bonus/config', data),
+  actualizarConfig: (id, data) => api.put(`/bonus/config/${id}`, data),
+  // Factores
+  factores: () => api.get('/bonus/factores'),
+  crearFactor: (data) => api.post('/bonus/factores', data),
+  actualizarFactor: (id, data) => api.put(`/bonus/factores/${id}`, data),
+  desactivarFactor: (id) => api.delete(`/bonus/factores/${id}`),
+  // Evaluaciones
+  iniciarPeriodo: (año, semestre) => api.post('/bonus/evaluaciones/iniciar', { año, semestre }),
+  listarEvaluaciones: (año, semestre) => api.get(`/bonus/evaluaciones/${año}/${semestre}`),
+  miEvaluacion: () => api.get('/bonus/evaluaciones/mia'),
+  obtenerEvaluacion: (id) => api.get(`/bonus/evaluaciones/${id}`),
+  guardarAutoEval: (id, data) => api.put(`/bonus/evaluaciones/${id}/auto`, data),
+  guardarEvalDir: (id, data) => api.put(`/bonus/evaluaciones/${id}/dir`, data),
+  cerrarEvaluacion: (id) => api.post(`/bonus/evaluaciones/${id}/cerrar`),
+  // Factor equipo
+  factorEquipo: (año, semestre) => api.get(`/bonus/factor-equipo/${año}/${semestre}`),
+  // Histórico y resumen
+  historial: (empleadoId) => api.get(`/bonus/historial/${empleadoId}`),
+  resumen: (año, semestre) => api.get(`/bonus/resumen/${año}/${semestre}`),
+  // Exportar
+  exportar: (año, semestre) => api.get(`/bonus/exportar/${año}/${semestre}`, { responseType: 'blob' }),
 }
 
 // Usuarios

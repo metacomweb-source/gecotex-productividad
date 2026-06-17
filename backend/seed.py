@@ -7,8 +7,11 @@ from models.tipo_dua import TipoDua, TipoTraficoEnum
 from models.incrementador import Incrementador
 from models.expediente import Expediente, CanalEnum, OrigenEnum
 from models.objetivo_mes import ObjetivoMes
-from models.parametros_bonus import ParametrosBonus, DEFAULT_TABLA_FACTOR_K
 from models.notificacion import Notificacion, TipoNotificacionEnum
+from models.config_bonus_global import ConfigBonusGlobal, DEFAULT_TRAMOS, DEFAULT_CONFIG_AREA1
+from models.factores_evaluacion import FactorEvaluacion
+from models.evaluaciones_bonus import EvaluacionBonus, EstadoEvaluacionEnum
+from models.respuestas_factores import RespuestaFactor
 
 
 CLIENTES = [
@@ -37,15 +40,20 @@ def cargar_seed(db: Session):
         {"nombre": "Sergio", "apellidos": "Martínez", "email": "sergio@gecotex.es", "password": "demo123",
          "rol": RolEnum.coordinador, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2019, 6, 1)},
         {"nombre": "Cristian", "apellidos": "López", "email": "cristian@gecotex.es", "password": "demo123",
-         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 9, 1)},
+         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 9, 1),
+         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05},
         {"nombre": "María", "apellidos": "Fernández", "email": "maria@gecotex.es", "password": "demo123",
-         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2021, 1, 15)},
+         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2021, 1, 15),
+         "salario_bruto_anual": 22000.0, "pct_maximo_bonus": 0.05},
         {"nombre": "Jorge", "apellidos": "Pérez", "email": "jorge@gecotex.es", "password": "demo123",
-         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2019, 11, 1)},
+         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2019, 11, 1),
+         "salario_bruto_anual": 23000.0, "pct_maximo_bonus": 0.05},
         {"nombre": "Silvia", "apellidos": "Romero", "email": "silvia@gecotex.es", "password": "demo123",
-         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2022, 4, 1)},
+         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2022, 4, 1),
+         "salario_bruto_anual": 24000.0, "pct_maximo_bonus": 0.05},
         {"nombre": "Ana", "apellidos": "Torres", "email": "ana@gecotex.es", "password": "demo123",
-         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 7, 1)},
+         "rol": RolEnum.operario, "departamento": DepartamentoEnum.operaciones, "fecha_incorporacion": date(2020, 7, 1),
+         "salario_bruto_anual": 21500.0, "pct_maximo_bonus": 0.05},
     ]
     usuarios = []
     for u_data in usuarios_data:
@@ -59,6 +67,8 @@ def cargar_seed(db: Session):
             fecha_incorporacion=u_data.get("fecha_incorporacion"),
             activo=True,
             jornada_horas_dia=8.0,
+            salario_bruto_anual=u_data.get("salario_bruto_anual"),
+            pct_maximo_bonus=u_data.get("pct_maximo_bonus", 0.05),
         )
         db.add(u)
         usuarios.append(u)
@@ -213,3 +223,143 @@ def cargar_seed(db: Session):
     db.commit()
 
     print(f"Seed completado con Tarifas 2025: {len(tipos)} tipos, {len(incrementadores)} servicios, {contador-1} expedientes.")
+
+    # ─── NUEVO SISTEMA DE BONUS ───────────────────────────────────────────────
+
+    # Config semestre actual
+    año_actual = datetime.now().year
+    sem_actual = 1 if datetime.now().month <= 6 else 2
+    fecha_inicio = date(año_actual, 1, 1) if sem_actual == 1 else date(año_actual, 7, 1)
+    fecha_fin = date(año_actual, 6, 30) if sem_actual == 1 else date(año_actual, 12, 31)
+
+    cfg_bonus = ConfigBonusGlobal(
+        año=año_actual,
+        semestre=sem_actual,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        antiguedad_minima_meses=12,
+        factor_equipo_activo=True,
+        factor_equipo_porcentaje=0.05,
+        factor_equipo_meses_minimos=4,
+        peso_area1=0.40, peso_area2=0.30, peso_area3=0.20, peso_area4=0.10,
+        peso_auto_evaluacion=0.30, peso_dir_evaluacion=0.70,
+        tabla_tramos_escalonados=DEFAULT_TRAMOS,
+        config_area1=DEFAULT_CONFIG_AREA1,
+    )
+    db.add(cfg_bonus)
+    db.commit()
+    db.refresh(cfg_bonus)
+
+    # Factores de evaluación
+    factores_data = [
+        # Área 2
+        (2, "Tasa de incidencias y errores atribuibles al operario", 1, "Excluye canal rojo/naranja AEAT"),
+        (2, "% expedientes resueltos sin incidencias sobre el total", 2, None),
+        (2, "Calidad del archivo documental y cumplimiento normativo", 3, None),
+        (2, "Gestión autónoma de incidencias y comunicación proactiva", 4, "Se ajusta en picos extraordinarios"),
+        # Área 3
+        (3, "Trabajo en equipo y colaboración con el equipo operativo", 1, None),
+        (3, "Actitud, compromiso y proactividad en el día a día", 2, None),
+        (3, "Cumplimiento de procedimientos internos y directrices", 3, None),
+        (3, "Comunicación interna: respuesta ágil y coordinación entre áreas", 4, None),
+        # Área 4
+        (4, "Adopción y uso correcto de la herramienta de gestión de DUAs", 1, None),
+        (4, "Uso activo del dashboard de carga operativa del equipo", 2, None),
+        (4, "Propuesta documentada de al menos 1 mejora de proceso", 3, "0 propuestas = 5 pts · 1 documentada = 7 pts · ≥2 = 9-10 pts"),
+    ]
+    factores = []
+    for area, nombre, orden, nota in factores_data:
+        f = FactorEvaluacion(area=area, nombre=nombre, orden=orden, nota_contexto=nota, activo=True)
+        db.add(f)
+        factores.append(f)
+    db.commit()
+    for f in factores:
+        db.refresh(f)
+
+    # Evaluación 'completada' para Cristian
+    cristian = next((u for u in usuarios if u.email == "cristian@gecotex.es"), None)
+    if cristian:
+        from services.calculo_bonus import calcular_puntuacion_area1 as _calc_area1
+        area1_cristian = _calc_area1(db, cristian.id, año_actual, sem_actual, cfg_bonus)
+        ev_cristian = EvaluacionBonus(
+            empleado_id=cristian.id,
+            config_id=cfg_bonus.id,
+            año=año_actual,
+            semestre=sem_actual,
+            estado=EstadoEvaluacionEnum.completada,
+            salario_bruto_anual=cristian.salario_bruto_anual,
+            pct_maximo_bonus=cristian.pct_maximo_bonus,
+            factor_k_promedio=area1_cristian["factor_k_promedio"],
+            pct_sla=area1_cristian["pct_sla"],
+            pct_registro=area1_cristian["pct_registro"],
+            puntuacion_area1=area1_cristian["puntuacion_area1"],
+            notas_empleado_area2="He gestionado bien las incidencias y mantenido el archivo al día.",
+            notas_director_area2="Buen rendimiento general, con algún retraso puntual en documentación.",
+            notas_empleado_area3="Siempre disponible para ayudar al equipo y cumplo los procedimientos.",
+            notas_director_area3="Actitud muy positiva y colaborativa.",
+            notas_empleado_area4="Uso la aplicación diariamente y he propuesto una mejora en el registro de partidas.",
+            notas_director_area4="Buen uso de las herramientas, propuesta documentada presentada.",
+            fecha_inicio_auto_eval=datetime.now() - timedelta(days=10),
+            fecha_fin_auto_eval=datetime.now() - timedelta(days=8),
+            fecha_inicio_eval_dir=datetime.now() - timedelta(days=7),
+        )
+        db.add(ev_cristian)
+        db.flush()
+        # Respuestas de Cristian
+        notas_cristian = {2: [7.0, 8.0, 7.5, 8.0], 3: [9.0, 8.5, 8.0, 9.0], 4: [8.0, 7.5, 7.0]}
+        notas_dir_cristian = {2: [7.5, 8.0, 8.0, 7.5], 3: [9.0, 9.0, 8.5, 8.5], 4: [8.5, 8.0, 8.0]}
+        for f in factores:
+            notas_area = notas_cristian.get(f.area, [])
+            notas_dir_area = notas_dir_cristian.get(f.area, [])
+            idx = f.orden - 1
+            nota_a = notas_area[idx] if idx < len(notas_area) else 7.0
+            nota_d = notas_dir_area[idx] if idx < len(notas_dir_area) else 7.5
+            nota_fin = round(nota_a * 0.30 + nota_d * 0.70, 2)
+            r = RespuestaFactor(
+                evaluacion_id=ev_cristian.id, factor_id=f.id,
+                nota_auto=nota_a, nota_dir=nota_d, nota_final=nota_fin,
+            )
+            db.add(r)
+        db.commit()
+        # Calcular puntuaciones
+        from services.calculo_bonus import calcular_evaluacion_completa as _calc_ev
+        _calc_ev(db, ev_cristian.id)
+
+    # Evaluación 'auto_evaluacion' para María
+    maria = next((u for u in usuarios if u.email == "maria@gecotex.es"), None)
+    if maria:
+        area1_maria = _calc_area1(db, maria.id, año_actual, sem_actual, cfg_bonus)
+        ev_maria = EvaluacionBonus(
+            empleado_id=maria.id,
+            config_id=cfg_bonus.id,
+            año=año_actual,
+            semestre=sem_actual,
+            estado=EstadoEvaluacionEnum.evaluacion_dir,
+            salario_bruto_anual=maria.salario_bruto_anual,
+            pct_maximo_bonus=maria.pct_maximo_bonus,
+            factor_k_promedio=area1_maria["factor_k_promedio"],
+            pct_sla=area1_maria["pct_sla"],
+            pct_registro=area1_maria["pct_registro"],
+            puntuacion_area1=area1_maria["puntuacion_area1"],
+            notas_empleado_area2="He mantenido la calidad de los expedientes al 100%.",
+            notas_empleado_area3="Siempre disponible y puntual en todas las reuniones de equipo.",
+            notas_empleado_area4="He propuesto dos mejoras este semestre: el sistema de alertas y el informe semanal.",
+            fecha_inicio_auto_eval=datetime.now() - timedelta(days=5),
+            fecha_fin_auto_eval=datetime.now() - timedelta(days=3),
+            fecha_inicio_eval_dir=datetime.now() - timedelta(days=2),
+        )
+        db.add(ev_maria)
+        db.flush()
+        notas_maria = {2: [8.5, 9.0, 8.0, 8.5], 3: [9.0, 9.5, 8.5, 9.0], 4: [8.0, 8.5, 9.0]}
+        for f in factores:
+            idx = f.orden - 1
+            notas_area = notas_maria.get(f.area, [])
+            nota_a = notas_area[idx] if idx < len(notas_area) else 8.0
+            r = RespuestaFactor(
+                evaluacion_id=ev_maria.id, factor_id=f.id,
+                nota_auto=nota_a,
+            )
+            db.add(r)
+        db.commit()
+
+    print("Seed bonus: configuración semestral, factores y evaluaciones demo creadas.")

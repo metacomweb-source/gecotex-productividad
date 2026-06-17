@@ -12,6 +12,9 @@ import ImportacionExcel from './pages/ImportacionExcel'
 import TablaMaestraDUAs from './pages/TablaMaestraDUAs'
 import Objetivos from './pages/Objetivos'
 import Bonus from './pages/Bonus'
+import MiEvaluacion from './pages/MiEvaluacion'
+import EvaluacionesBonus from './pages/EvaluacionesBonus'
+import FormularioEvalDir from './pages/FormularioEvalDir'
 import Empleados from './pages/Empleados'
 import Informes from './pages/Informes'
 import Configuracion from './pages/Configuracion'
@@ -53,6 +56,9 @@ export default function App() {
       <Route path="/tabla-maestra" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><TablaMaestraDUAs /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/importacion" element={<ProtectedRoute requiredRole="coordinador"><Layout><ErrorBoundary><ImportacionExcel /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/bonus" element={<ProtectedRoute requiredRole="director"><Layout><ErrorBoundary><Bonus /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/mi-evaluacion" element={<ProtectedRoute><Layout><ErrorBoundary><MiEvaluacion /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/evaluaciones-bonus" element={<ProtectedRoute requiredRole="director"><Layout><ErrorBoundary><EvaluacionesBonus /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/evaluaciones-bonus/:id" element={<ProtectedRoute requiredRole="director"><Layout><ErrorBoundary><FormularioEvalDir /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/empleados" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Empleados /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/informes" element={<ProtectedRoute><Layout><ErrorBoundary><Informes /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/configuracion" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Configuracion /></ErrorBoundary></Layout></ProtectedRoute>} />

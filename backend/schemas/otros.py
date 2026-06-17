@@ -198,6 +198,182 @@ class ConfiguracionUpdate(BaseModel):
     umbral_ocupacion: Optional[int] = None
 
 
+# ─── NUEVO SISTEMA DE BONUS ────────────────────────────────────────────────
+
+class ConfigBonusCreate(BaseModel):
+    año: int
+    semestre: int
+    fecha_inicio: str
+    fecha_fin: str
+    antiguedad_minima_meses: int = 12
+    factor_equipo_activo: bool = True
+    factor_equipo_porcentaje: float = 0.05
+    factor_equipo_meses_minimos: int = 4
+    peso_area1: float = 0.40
+    peso_area2: float = 0.30
+    peso_area3: float = 0.20
+    peso_area4: float = 0.10
+    peso_auto_evaluacion: float = 0.30
+    peso_dir_evaluacion: float = 0.70
+    tabla_tramos_escalonados: Optional[List[Any]] = None
+    config_area1: Optional[Any] = None
+
+
+class ConfigBonusUpdate(BaseModel):
+    fecha_inicio: Optional[str] = None
+    fecha_fin: Optional[str] = None
+    antiguedad_minima_meses: Optional[int] = None
+    factor_equipo_activo: Optional[bool] = None
+    factor_equipo_porcentaje: Optional[float] = None
+    factor_equipo_meses_minimos: Optional[int] = None
+    peso_area1: Optional[float] = None
+    peso_area2: Optional[float] = None
+    peso_area3: Optional[float] = None
+    peso_area4: Optional[float] = None
+    peso_auto_evaluacion: Optional[float] = None
+    peso_dir_evaluacion: Optional[float] = None
+    tabla_tramos_escalonados: Optional[List[Any]] = None
+    config_area1: Optional[Any] = None
+
+
+class ConfigBonusResponse(BaseModel):
+    id: int
+    año: int
+    semestre: int
+    fecha_inicio: str
+    fecha_fin: str
+    antiguedad_minima_meses: int
+    factor_equipo_activo: bool
+    factor_equipo_porcentaje: float
+    factor_equipo_meses_minimos: int
+    peso_area1: float
+    peso_area2: float
+    peso_area3: float
+    peso_area4: float
+    peso_auto_evaluacion: float
+    peso_dir_evaluacion: float
+    tabla_tramos_escalonados: List[Any]
+    config_area1: Any
+
+    class Config:
+        from_attributes = True
+
+
+class FactorEvaluacionResponse(BaseModel):
+    id: int
+    area: int
+    nombre: str
+    descripcion: Optional[str]
+    orden: int
+    activo: bool
+    nota_contexto: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class FactorEvaluacionCreate(BaseModel):
+    area: int
+    nombre: str
+    descripcion: Optional[str] = None
+    orden: int = 0
+    nota_contexto: Optional[str] = None
+
+
+class FactorEvaluacionUpdate(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    orden: Optional[int] = None
+    activo: Optional[bool] = None
+    nota_contexto: Optional[str] = None
+
+
+class RespuestaFactorItem(BaseModel):
+    factor_id: int
+    nota_auto: Optional[float] = None
+    nota_dir: Optional[float] = None
+    comentario_auto: Optional[str] = None
+    comentario_dir: Optional[str] = None
+
+
+class RespuestaFactorResponse(BaseModel):
+    id: int
+    evaluacion_id: int
+    factor_id: int
+    nota_auto: Optional[float]
+    nota_dir: Optional[float]
+    nota_final: Optional[float]
+    comentario_auto: Optional[str]
+    comentario_dir: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class AutoEvaluacionRequest(BaseModel):
+    respuestas: List[RespuestaFactorItem]
+    notas_area2: Optional[str] = None
+    notas_area3: Optional[str] = None
+    notas_area4: Optional[str] = None
+
+
+class EvalDireccionRequest(BaseModel):
+    respuestas: List[RespuestaFactorItem]
+    notas_area2: Optional[str] = None
+    notas_area3: Optional[str] = None
+    notas_area4: Optional[str] = None
+
+
+class EvaluacionBonusResponse(BaseModel):
+    id: int
+    empleado_id: int
+    empleado_nombre: Optional[str] = None
+    config_id: int
+    año: int
+    semestre: int
+    estado: str
+    salario_bruto_anual: Optional[float]
+    pct_maximo_bonus: float
+    factor_k_promedio: Optional[float]
+    pct_sla: Optional[float]
+    pct_registro: Optional[float]
+    puntuacion_area1: Optional[float]
+    notas_empleado_area2: Optional[str]
+    notas_director_area2: Optional[str]
+    puntuacion_area2: Optional[float]
+    notas_empleado_area3: Optional[str]
+    notas_director_area3: Optional[str]
+    puntuacion_area3: Optional[float]
+    notas_empleado_area4: Optional[str]
+    notas_director_area4: Optional[str]
+    puntuacion_area4: Optional[float]
+    puntuacion_total: Optional[float]
+    factor_equipo_aplicado: Optional[bool]
+    porcentaje_tramo: Optional[float]
+    bonus_semestral_euros: Optional[float]
+    fecha_inicio_auto_eval: Optional[datetime]
+    fecha_fin_auto_eval: Optional[datetime]
+    fecha_inicio_eval_dir: Optional[datetime]
+    fecha_cierre: Optional[datetime]
+    respuestas: Optional[List[RespuestaFactorResponse]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class FactorEquipoResponse(BaseModel):
+    meses_cumplidos: int
+    meses_totales: int
+    activado: bool
+    factor_multiplicador: float
+    detalle_meses: List[dict]
+
+
+class IniciarPeriodoRequest(BaseModel):
+    año: int
+    semestre: int
+
+
 class ImportacionPreviewResponse(BaseModel):
     columnas_detectadas: List[str]
     mapeo_sugerido: dict

@@ -6,7 +6,7 @@ import Cronometro from './Cronometro'
 import {
   LayoutDashboard, FileText, Users, Target, Award, Upload,
   Settings, ChevronLeft, ChevronRight, Bell, LogOut,
-  BarChart3, Database, Timer, ChevronRight as Chevron
+  BarChart3, Database, Timer, ClipboardCheck
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -35,6 +35,8 @@ export default function Layout({ children }) {
     'tabla-maestra': { name: 'Tabla maestra de DUAs', desc: 'Tipos de DUA e incrementadores disponibles para los expedientes' },
     'importacion': { name: 'Importación desde Excel', desc: 'Importa expedientes en bloque desde ficheros Excel de Tarictrans' },
     'bonus': { name: 'Bonus y Factor K', desc: 'Parámetros de bonificación y tabla de rendimiento por operario' },
+    'mi-evaluacion': { name: 'Mi Evaluación', desc: 'Autoevaluación semestral y resultado del bonus' },
+    'evaluaciones-bonus': { name: 'Bonus y Evaluaciones', desc: 'Gestión de evaluaciones semestrales del equipo' },
     'empleados': { name: 'Empleados', desc: 'Gestión de usuarios, roles y accesos al sistema' },
     'informes': { name: 'Informes Excel', desc: 'Descarga informes de productividad, expedientes y bonus' },
     'configuracion': { name: 'Configuración', desc: 'Parámetros generales del sistema GECOTEX' },
@@ -77,8 +79,9 @@ export default function Layout({ children }) {
               <NavItem to="/importacion" icon={Upload} label="Importar Excel" collapsed={collapsed} />
             </>
           )}
-          {canSeeBonus && (
-            <NavItem to="/bonus" icon={Award} label="Bonus y Factor K" collapsed={collapsed} />
+          <NavItem to="/mi-evaluacion" icon={ClipboardCheck} label="Mi Evaluación" collapsed={collapsed} />
+          {isDirector && (
+            <NavItem to="/evaluaciones-bonus" icon={Award} label="Bonus y Evaluaciones" collapsed={collapsed} />
           )}
           {isAdmin && (
             <NavItem to="/empleados" icon={Users} label="Empleados" collapsed={collapsed} />
