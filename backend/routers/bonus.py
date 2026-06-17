@@ -40,15 +40,15 @@ def _ev_to_response(ev: EvaluacionBonus) -> dict:
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-@router.get("/config/{año}/{semestre}", response_model=ConfigBonusResponse)
+@router.get("/config/{anio}/{semestre}", response_model=ConfigBonusResponse)
 def obtener_config(
-    año: int,
+    anio: int,
     semestre: int,
     db: Session = Depends(get_db),
     current_user=Depends(require_min_role(RolEnum.director)),
 ):
     cfg = db.query(ConfigBonusGlobal).filter(
-        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+        ConfigBonusGlobal.año == anio, ConfigBonusGlobal.semestre == semestre
     ).first()
     if not cfg:
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
@@ -56,9 +56,9 @@ def obtener_config(
     return _config_to_response(cfg)
 
 
-@router.put("/config/{año}/{semestre}", response_model=ConfigBonusResponse)
+@router.put("/config/{anio}/{semestre}", response_model=ConfigBonusResponse)
 def upsert_config(
-    año: int,
+    anio: int,
     semestre: int,
     data: ConfigBonusCreate,
     db: Session = Depends(get_db),
@@ -66,7 +66,7 @@ def upsert_config(
 ):
     from sqlalchemy.orm.attributes import flag_modified
     cfg = db.query(ConfigBonusGlobal).filter(
-        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+        ConfigBonusGlobal.año == anio, ConfigBonusGlobal.semestre == semestre
     ).first()
     if cfg:
         update_fields = data.model_dump(exclude={"año", "semestre"})
@@ -79,7 +79,7 @@ def upsert_config(
         flag_modified(cfg, "config_area1")
     else:
         cfg = ConfigBonusGlobal(
-            año=año,
+            año=anio,
             semestre=semestre,
             fecha_inicio=date.fromisoformat(data.fecha_inicio),
             fecha_fin=date.fromisoformat(data.fecha_fin),
@@ -296,15 +296,15 @@ def iniciar_periodo(
     return {"evaluaciones_creadas": creadas, "año": data.año, "semestre": data.semestre}
 
 
-@router.get("/evaluaciones/{año}/{semestre}")
+@router.get("/evaluaciones/{anio}/{semestre}")
 def listar_evaluaciones(
-    año: int,
+    anio: int,
     semestre: int,
     db: Session = Depends(get_db),
     current_user=Depends(require_min_role(RolEnum.director)),
 ):
     evs = db.query(EvaluacionBonus).filter(
-        EvaluacionBonus.año == año, EvaluacionBonus.semestre == semestre
+        EvaluacionBonus.año == anio, EvaluacionBonus.semestre == semestre
     ).all()
     return [_ev_to_response(ev) for ev in evs]
 
@@ -475,19 +475,19 @@ def cerrar_evaluacion(
 
 # ─── FACTOR EQUIPO ───────────────────────────────────────────────────────────
 
-@router.get("/factor-equipo/{año}/{semestre}")
+@router.get("/factor-equipo/{anio}/{semestre}")
 def factor_equipo(
-    año: int,
+    anio: int,
     semestre: int,
     db: Session = Depends(get_db),
     current_user=Depends(require_min_role(RolEnum.director)),
 ):
     cfg = db.query(ConfigBonusGlobal).filter(
-        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+        ConfigBonusGlobal.año == anio, ConfigBonusGlobal.semestre == semestre
     ).first()
     if not cfg:
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
-    return calcular_factor_equipo(db, año, semestre, cfg)
+    return calcular_factor_equipo(db, anio, semestre, cfg)
 
 
 # ─── HISTÓRICO Y RESUMEN ─────────────────────────────────────────────────────
@@ -508,25 +508,25 @@ def historial_empleado(
     return [_ev_to_response(ev) for ev in evs]
 
 
-@router.get("/resumen/{año}/{semestre}")
+@router.get("/resumen/{anio}/{semestre}")
 def resumen_periodo(
-    año: int,
+    anio: int,
     semestre: int,
     db: Session = Depends(get_db),
     current_user=Depends(require_min_role(RolEnum.director)),
 ):
     evs = db.query(EvaluacionBonus).filter(
-        EvaluacionBonus.año == año, EvaluacionBonus.semestre == semestre
+        EvaluacionBonus.año == anio, EvaluacionBonus.semestre == semestre
     ).all()
     total_bonus = sum(ev.bonus_semestral_euros or 0 for ev in evs)
     fe = None
     cfg = db.query(ConfigBonusGlobal).filter(
-        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+        ConfigBonusGlobal.año == anio, ConfigBonusGlobal.semestre == semestre
     ).first()
     if cfg:
-        fe = calcular_factor_equipo(db, año, semestre, cfg)
+        fe = calcular_factor_equipo(db, anio, semestre, cfg)
     return {
-        "año": año,
+        "año": anio,
         "semestre": semestre,
         "total_evaluaciones": len(evs),
         "total_bonus_euros": round(total_bonus, 2),
@@ -537,25 +537,25 @@ def resumen_periodo(
 
 # ─── EXPORTAR ────────────────────────────────────────────────────────────────
 
-@router.get("/exportar/{año}/{semestre}")
+@router.get("/exportar/{anio}/{semestre}")
 def exportar_bonus(
-    año: int,
+    anio: int,
     semestre: int,
     db: Session = Depends(get_db),
     current_user=Depends(require_min_role(RolEnum.director)),
 ):
     evs = db.query(EvaluacionBonus).filter(
-        EvaluacionBonus.año == año, EvaluacionBonus.semestre == semestre
+        EvaluacionBonus.año == anio, EvaluacionBonus.semestre == semestre
     ).all()
     cfg = db.query(ConfigBonusGlobal).filter(
-        ConfigBonusGlobal.año == año, ConfigBonusGlobal.semestre == semestre
+        ConfigBonusGlobal.año == anio, ConfigBonusGlobal.semestre == semestre
     ).first()
     factores = db.query(FactorEvaluacion).filter(FactorEvaluacion.activo == True).order_by(
         FactorEvaluacion.area, FactorEvaluacion.orden
     ).all()
-    fe = calcular_factor_equipo(db, año, semestre, cfg) if cfg else None
-    buf = generar_informe_bonus_semestral(evs, factores, cfg, fe, año, semestre)
-    filename = f"GECOTEX_Bonus_{año}_S{semestre}.xlsx"
+    fe = calcular_factor_equipo(db, anio, semestre, cfg) if cfg else None
+    buf = generar_informe_bonus_semestral(evs, factores, cfg, fe, anio, semestre)
+    filename = f"GECOTEX_Bonus_{anio}_S{semestre}.xlsx"
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
