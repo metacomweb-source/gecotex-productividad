@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { kpisApi, dashboardApi } from '../api/client'
 import {
@@ -576,9 +576,8 @@ export default function DashboardEquipo() {
                   const k = op.factor_k ?? 0
                   const isExpanded = expanded === op.operario_id
                   return (
-                    <>
+                    <Fragment key={op.operario_id}>
                       <tr
-                        key={op.operario_id}
                         className={clsx('cursor-pointer transition-colors', kBg(k), 'hover:brightness-95')}
                         onClick={() => setExpanded(isExpanded ? null : op.operario_id)}
                       >
@@ -619,7 +618,7 @@ export default function DashboardEquipo() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`exp-${op.operario_id}`} className="bg-gecotex-bg/30">
+                        <tr className="bg-gecotex-bg/30">
                           <td colSpan={8} className="px-6 py-4">
                             <div className="flex items-center gap-6 flex-wrap">
                               <div className="text-[11px] text-gecotex-ink-sub space-y-1">
@@ -637,7 +636,7 @@ export default function DashboardEquipo() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   )
                 })}
               </tbody>
