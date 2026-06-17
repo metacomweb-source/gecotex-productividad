@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCronometro } from '../context/CronometroContext'
-import { kpisApi, expedientesApi, sesionesApi } from '../api/client'
+import { kpisApi, expedientesApi, sesionesApi, bonusApi } from '../api/client'
 import KpiCard from '../components/KpiCard'
 import Semaforo from '../components/Semaforo'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts'
-import { FileText, Plus, Sparkles, Award, Package, Clock, Pause, StopCircle, Search, Filter, ChevronRight, Timer, ChevronDown } from 'lucide-react'
+import { FileText, Plus, Sparkles, Award, Package, Clock, Pause, StopCircle, Search, Filter, ChevronRight, Timer, ChevronDown, ClipboardCheck } from 'lucide-react'
 import { fmtUP, fmtK, fmtPct, fmtFechaHora, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
 
@@ -20,6 +20,7 @@ export default function DashboardOperario() {
   const [kpis, setKpis] = useState(null)
   const [expedientes, setExpedientes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [miEval, setMiEval] = useState(null)
 
   useEffect(() => {
     if (!usuario) return
@@ -34,6 +35,7 @@ export default function DashboardOperario() {
       })
       .catch(console.error)
       .finally(() => setLoading(false))
+    bonusApi.miEvaluacion().then(r => setMiEval(r.data)).catch(() => setMiEval(null))
   }, [usuario, año, mes])
 
   const chartData = (() => {
@@ -270,6 +272,49 @@ export default function DashboardOperario() {
           </div>
         </div>
       </div>
+
+      {/* Evaluación semestral */}
+      {miEval && (
+        <div
+          className="card flex items-center gap-5 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/mi-evaluacion')}
+        >
+          <div className={clsx(
+            'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
+            miEval.estado === 'cerrada' ? 'bg-gecotex-green/10' :
+            miEval.estado === 'completada' ? 'bg-green-50' :
+            miEval.estado === 'auto_evaluacion' ? 'bg-blue-50' : 'bg-gray-100'
+          )}>
+            <ClipboardCheck size={24} className={clsx(
+              miEval.estado === 'cerrada' || miEval.estado === 'completada' ? 'text-gecotex-green' :
+              miEval.estado === 'auto_evaluacion' ? 'text-blue-500' : 'text-gray-400'
+            )} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-gecotex-ink">
+              Evaluación Semestral · S{miEval.semestre} {miEval.año}
+            </p>
+            <p className="text-[12px] text-gecotex-ink-sub mt-0.5">
+              {miEval.estado === 'auto_evaluacion' && 'Pendiente: completa tu autoevaluación'}
+              {miEval.estado === 'evaluacion_dir' && 'En revisión por dirección'}
+              {miEval.estado === 'completada' && `Puntuación: ${miEval.puntuacion_total?.toFixed(1) || '—'} · Bonus calculado`}
+              {miEval.estado === 'cerrada' && `Cerrada · Bonus: ${miEval.bonus_semestral_euros?.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }) || '—'}`}
+              {miEval.estado === 'borrador' && 'Período iniciado — pendiente de autoevaluación'}
+            </p>
+          </div>
+          {miEval.estado === 'auto_evaluacion' && (
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full flex-shrink-0">
+              Acción requerida
+            </span>
+          )}
+          {miEval.bonus_semestral_euros != null && miEval.estado !== 'auto_evaluacion' && (
+            <p className="text-lg font-bold text-gecotex-primary flex-shrink-0">
+              {miEval.bonus_semestral_euros.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+            </p>
+          )}
+          <ChevronRight size={16} className="text-gecotex-ink-muted flex-shrink-0" />
+        </div>
+      )}
 
       {/* Recent Expedientes Card */}
       <div className="card overflow-hidden !p-0">

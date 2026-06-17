@@ -6,7 +6,7 @@ import Cronometro from './Cronometro'
 import {
   LayoutDashboard, FileText, Users, Target, Award, Upload,
   Settings, ChevronLeft, ChevronRight, Bell, LogOut,
-  BarChart3, Database, Timer, ClipboardCheck
+  BarChart3, Database, Timer, ClipboardCheck, SlidersHorizontal
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -40,6 +40,7 @@ export default function Layout({ children }) {
     'empleados': { name: 'Empleados', desc: 'Gestión de usuarios, roles y accesos al sistema' },
     'informes': { name: 'Informes Excel', desc: 'Descarga informes de productividad, expedientes y bonus' },
     'configuracion': { name: 'Configuración', desc: 'Parámetros generales del sistema GECOTEX' },
+    'config-bonus': { name: 'Configuración de bonus', desc: 'Parámetros de evaluación semestral: áreas, tramos y factores' },
   }
 
   const currentSection = pathParts[0] || 'dashboard'
@@ -84,7 +85,10 @@ export default function Layout({ children }) {
             <NavItem to="/evaluaciones-bonus" icon={Award} label="Bonus y Evaluaciones" collapsed={collapsed} />
           )}
           {isAdmin && (
-            <NavItem to="/empleados" icon={Users} label="Empleados" collapsed={collapsed} />
+            <>
+              <NavItem to="/empleados" icon={Users} label="Empleados" collapsed={collapsed} />
+              <NavItem to="/config-bonus" icon={SlidersHorizontal} label="Config. Bonus" collapsed={collapsed} />
+            </>
           )}
           <NavItem to="/informes" icon={BarChart3} label="Informes" collapsed={collapsed} />
           {isAdmin && (

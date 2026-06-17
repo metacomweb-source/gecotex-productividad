@@ -18,6 +18,7 @@ import FormularioEvalDir from './pages/FormularioEvalDir'
 import Empleados from './pages/Empleados'
 import Informes from './pages/Informes'
 import Configuracion from './pages/Configuracion'
+import ConfigBonus from './pages/ConfigBonus'
 
 function ProtectedRoute({ children, requiredRole }) {
   const { usuario, loading, isCoordinador, isDirector, isAdmin } = useAuth()
@@ -62,6 +63,7 @@ export default function App() {
       <Route path="/empleados" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Empleados /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/informes" element={<ProtectedRoute><Layout><ErrorBoundary><Informes /></ErrorBoundary></Layout></ProtectedRoute>} />
       <Route path="/configuracion" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><Configuracion /></ErrorBoundary></Layout></ProtectedRoute>} />
+      <Route path="/config-bonus" element={<ProtectedRoute requiredRole="admin"><Layout><ErrorBoundary><ConfigBonus /></ErrorBoundary></Layout></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
