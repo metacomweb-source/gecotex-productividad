@@ -125,21 +125,6 @@ def cargar_seed(db: Session):
         incrementadores.append(i)
     db.commit()
 
-    # --- PARÁMETROS BONUS ---
-    años_bonus = [datetime.now().year - 1, datetime.now().year]
-    for año_bonus in años_bonus:
-        pb = ParametrosBonus(
-            año=año_bonus,
-            objetivo_crecimiento_facturacion=0.15,
-            factor_disponibilidad=0.70,
-            antiguedad_minima_meses=12,
-            peso_productividad_individual=0.40,
-            peso_resultado_global=0.60,
-            tabla_factor_k=DEFAULT_TABLA_FACTOR_K,
-        )
-        db.add(pb)
-    db.commit()
-
     # --- OPERARIOS Y OBJETIVOS ---
     operarios = [u for u in usuarios if u.rol == RolEnum.operario]
     base_objetivo_up = 250.0  # Ajustado a nuevas UPs
@@ -252,20 +237,20 @@ def cargar_seed(db: Session):
 
     # Factores de evaluación
     factores_data = [
-        # Área 2
-        (2, "Tasa de incidencias y errores atribuibles al operario", 1, "Excluye canal rojo/naranja AEAT"),
-        (2, "% expedientes resueltos sin incidencias sobre el total", 2, None),
+        # Área 2 — Calidad Operativa
+        (2, "Tasa de incidencias y errores en declaraciones atribuibles al operario", 1, "Canal rojo/naranja decidido por la AEAT queda excluido de penalización individual"),
+        (2, "% de expedientes resueltos sin incidencias sobre el total gestionado", 2, None),
         (2, "Calidad del archivo documental y cumplimiento normativo", 3, None),
-        (2, "Gestión autónoma de incidencias y comunicación proactiva", 4, "Se ajusta en picos extraordinarios"),
-        # Área 3
+        (2, "Gestión autónoma de incidencias y comunicación proactiva con el cliente", 4, "Se ajusta si hay picos de trabajo extraordinarios"),
+        # Área 3 — Gecotex Corporate
         (3, "Trabajo en equipo y colaboración con el equipo operativo", 1, None),
         (3, "Actitud, compromiso y proactividad en el día a día", 2, None),
-        (3, "Cumplimiento de procedimientos internos y directrices", 3, None),
+        (3, "Cumplimiento de procedimientos internos y directrices de dirección", 3, None),
         (3, "Comunicación interna: respuesta ágil y coordinación entre áreas", 4, None),
-        # Área 4
+        # Área 4 — Digitalización y Adaptación
         (4, "Adopción y uso correcto de la herramienta de gestión de DUAs", 1, None),
         (4, "Uso activo del dashboard de carga operativa del equipo", 2, None),
-        (4, "Propuesta documentada de al menos 1 mejora de proceso", 3, "0 propuestas = 5 pts · 1 documentada = 7 pts · ≥2 = 9-10 pts"),
+        (4, "Propuesta documentada de al menos 1 mejora de proceso en el semestre", 3, "0 propuestas = 5 · 1 propuesta documentada = 7 · 2 o más = 9-10"),
     ]
     factores = []
     for area, nombre, orden, nota in factores_data:

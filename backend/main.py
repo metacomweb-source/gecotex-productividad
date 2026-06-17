@@ -15,6 +15,8 @@ async def lifespan(app: FastAPI):
         cargar_seed(db)
     finally:
         db.close()
+    from patch_factores import patch as patch_factores
+    patch_factores()
     yield
 
 
