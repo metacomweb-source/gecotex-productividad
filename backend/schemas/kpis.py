@@ -15,7 +15,6 @@ class KpiOperarioResponse(BaseModel):
     num_expedientes: int
     tasa_ocupacion: Optional[float] = None
     irr: Optional[float] = None
-    tasa_incidencia: float
     tiempo_medio_tramitacion_min: Optional[float] = None
     tiempo_medio_respuesta_min: Optional[float] = None
     tiempo_medio_facturacion_horas: Optional[float] = None
@@ -41,7 +40,6 @@ class RankingItem(BaseModel):
     factor_k: Optional[float] = None
     pct_cumplimiento: Optional[float] = None
     num_expedientes: int
-    tasa_incidencia: float
     tendencia: Optional[str] = None
 
 

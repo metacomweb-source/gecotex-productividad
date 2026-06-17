@@ -32,12 +32,6 @@ function textoKpi(tipo, valor) {
     if (valor <= 110) return 'Carga alta pero dentro del límite saludable.'
     return 'Estás sobrecargado/a. Habla con tu coordinador/a.'
   }
-  if (tipo === 'incidencia') {
-    if (valor == null) return null
-    if (valor < 10) return 'Muy pocos expedientes con incidencias. Buena calidad.'
-    if (valor <= 20) return 'Nivel de incidencias normal.'
-    return 'Incidencias por encima de la media.'
-  }
   return null
 }
 
@@ -217,17 +211,13 @@ export default function DashboardOperario() {
 
         <div className="space-y-1">
           <KpiCard
-            titulo="Tasa incidencia"
-            ayuda="Porcentaje de expedientes con canal naranja o rojo sobre el total procesado. Una tasa baja refleja buena calidad en la gestión documental."
-            valor={kpis?.tasa_incidencia != null ? kpis.tasa_incidencia.toFixed(0) : '—'}
-            unit="%"
+            titulo="Expedientes"
+            ayuda="Total de expedientes gestionados este mes."
+            valor={kpis?.num_expedientes ?? '—'}
             icono={FileText}
-            color={kpis?.tasa_incidencia > 20 ? 'naranja' : 'navy'}
-            footer={`${kpis?.num_expedientes ?? 0} expedientes este mes`}
+            color="navy"
+            footer="Expedientes este mes"
           />
-          {textoKpi('incidencia', kpis?.tasa_incidencia) && (
-            <p className="text-xs text-gecotex-ink-muted px-1">{textoKpi('incidencia', kpis?.tasa_incidencia)}</p>
-          )}
         </div>
       </div>
 

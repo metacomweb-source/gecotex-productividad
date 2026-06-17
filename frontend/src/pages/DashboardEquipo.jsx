@@ -5,7 +5,7 @@ import Semaforo from '../components/Semaforo'
 import KpiCard from '../components/KpiCard'
 import AccionesPendientes from '../components/AccionesPendientes'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Users, Sparkles, Shield, CheckCircle, Award, Package, ArrowUp, ArrowDown, MoveRight, Filter, Download } from 'lucide-react'
+import { Users, Sparkles, CheckCircle, Award, Package, ArrowUp, ArrowDown, MoveRight, Filter, Download } from 'lucide-react'
 import { fmtUP, fmtK, fmtPct, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
 
@@ -149,8 +149,8 @@ export default function DashboardEquipo() {
            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <KpiCard titulo="Operarios activos" valor={suficiencia?.num_operarios_activos || 0} icono={Users} color="navy" footer="Equipo de Valencia" />
               <KpiCard titulo="Factor K medio" valor={fmtK(ranking.length > 0 ? ranking.filter(o => o.factor_k != null).reduce((s, o) => s + o.factor_k, 0) / ranking.filter(o => o.factor_k != null).length : null)} icono={Sparkles} color="orange" footer="Media del equipo" />
-              <KpiCard titulo="% Incidencia" valor={ranking.length > 0 ? fmtPct(ranking.reduce((s,o)=>s+(o.tasa_incidencia||0),0)/ranking.length) : '0'} unit="%" icono={Shield} color="verde" footer="Naranja + Rojo" />
-              <KpiCard titulo="Expedientes" valor={kpisEquipo?.num_expedientes_total ?? '—'} icono={Package} color="navy" footer="Cerrados este mes" />
+              <KpiCard titulo="Expedientes" valor={kpisEquipo?.num_expedientes_total ?? '—'} icono={Package} color="verde" footer="Total mes" />
+              <KpiCard titulo="Expedientes" valor={kpisEquipo?.num_expedientes_total ?? '—'} icono={Package} color="navy" footer="Gestionados este mes" />
               <KpiCard titulo="UPs Totales" valor={fmtUP(kpisEquipo?.total_up_producidas)} icono={CheckCircle} color="verde" footer={`Vs ${fmtUP(kpisEquipo?.total_up_objetivo)} obj.`} />
               <KpiCard titulo="% Objetivo global" valor={kpisEquipo?.pct_cumplimiento_global != null ? kpisEquipo.pct_cumplimiento_global.toFixed(0) : '—'} unit="%" icono={Award} color="blue" footer="Cumplimiento equipo" />
            </div>
@@ -176,7 +176,6 @@ export default function DashboardEquipo() {
                     <th className="table-header text-right">% Obj.</th>
                     <th className="table-header text-center">Factor K</th>
                     <th className="table-header text-right">Exp.</th>
-                    <th className="table-header text-right">% Incid.</th>
                     <th className="table-header text-center">Tendencia</th>
                  </tr>
               </thead>
@@ -207,7 +206,6 @@ export default function DashboardEquipo() {
                              <Semaforo valor={k} tipo="factor_k" size="sm" dot={false} />
                           </td>
                           <td className="table-cell text-right text-gecotex-ink-sub font-mono">{op.num_expedientes}</td>
-                          <td className="table-cell text-right font-mono" style={{ color: op.tasa_incidencia > 20 ? '#C0392B' : '#5B6577' }}>{fmtPct(op.tasa_incidencia)}</td>
                           <td className="table-cell text-center">
                              {op.tendencia === 'sube' ? <ArrowUp size={16} className="text-gecotex-green mx-auto" /> : 
                               op.tendencia === 'baja' ? <ArrowDown size={16} className="text-gecotex-red mx-auto" /> : 

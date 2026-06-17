@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import date
 import calendar
 from sqlalchemy.orm import Session
-from models.expediente import Expediente, CanalEnum
+from models.expediente import Expediente
 from models.usuario import Usuario, RolEnum
 from models.objetivo_mes import ObjetivoMes
 from models.parametros_bonus import ParametrosBonus
@@ -61,9 +61,6 @@ def calcular_kpis_operario(
     ct = capacidad_teorica_mes(operario, año, mes, factor_disponibilidad, tiempo_up_base_min)
     tasa_ocupacion = round((up_producidas / ct * 100), 2) if ct > 0 else None
 
-    exp_incidencia = sum(1 for e in expedientes if e.canal_respuesta in [CanalEnum.naranja, CanalEnum.rojo])
-    tasa_incidencia = round((exp_incidencia / num_expedientes * 100), 2) if num_expedientes > 0 else 0.0
-
     tiempos_tramitacion = []
     tiempos_respuesta = []
     tiempos_facturacion = []
@@ -96,7 +93,6 @@ def calcular_kpis_operario(
         "factor_k": round(up_producidas / objetivo_up, 3) if objetivo_up else None,
         "num_expedientes": num_expedientes,
         "tasa_ocupacion": tasa_ocupacion,
-        "tasa_incidencia": tasa_incidencia,
         "tiempo_medio_tramitacion_min": tmt,
         "tiempo_medio_respuesta_min": tmr,
         "tiempo_medio_facturacion_horas": tmf,
