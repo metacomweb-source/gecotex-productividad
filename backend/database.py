@@ -21,4 +21,5 @@ def get_db():
 
 def create_tables():
     from models import usuario, tipo_dua, incrementador, expediente, sesion_trabajo, objetivo_mes, parametros_bonus, notificacion, importacion_excel
+    from models import config_bonus_global, factores_evaluacion, evaluaciones_bonus, respuestas_factores
     Base.metadata.create_all(bind=engine)

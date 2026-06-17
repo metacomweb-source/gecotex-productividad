@@ -13,6 +13,8 @@ async def lifespan(app: FastAPI):
     try:
         from seed import cargar_seed
         cargar_seed(db)
+    except Exception as e:
+        print(f"[seed] Error no fatal: {e}")
     finally:
         db.close()
     from patch_factores import patch as patch_factores

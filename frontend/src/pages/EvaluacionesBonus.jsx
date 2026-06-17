@@ -63,7 +63,11 @@ export default function EvaluacionesBonus() {
     setIniciando(true)
     try {
       const r = await api.post('/bonus/evaluaciones/iniciar', { año, semestre })
-      toast.success(`${r.data.evaluaciones_creadas} evaluaciones creadas`)
+      if (r.data.evaluaciones_creadas > 0) {
+        toast.success(`${r.data.evaluaciones_creadas} evaluaciones creadas`)
+      } else {
+        toast.success('Todas las evaluaciones del período ya existen')
+      }
       cargar()
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error al iniciar el período')
@@ -114,10 +118,10 @@ export default function EvaluacionesBonus() {
             <option value={1}>Semestre 1 (Ene–Jun)</option>
             <option value={2}>Semestre 2 (Jul–Dic)</option>
           </select>
-          {evaluaciones.length === 0 && !loading && (
+          {config && !loading && (
             <button onClick={handleIniciarPeriodo} disabled={iniciando} className="btn-primary flex items-center gap-2">
               {iniciando ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-              Iniciar período
+              {evaluaciones.length === 0 ? 'Iniciar período' : 'Crear evaluaciones faltantes'}
             </button>
           )}
           {evaluaciones.length > 0 && (
