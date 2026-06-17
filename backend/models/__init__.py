@@ -7,6 +7,7 @@ from models.objetivo_mes import ObjetivoMes
 from models.parametros_bonus import ParametrosBonus, DEFAULT_TABLA_FACTOR_K
 from models.notificacion import Notificacion, TipoNotificacionEnum
 from models.importacion_excel import ImportacionExcel
+from models.configuracion import Configuracion
 
 __all__ = [
     "Usuario", "RolEnum", "DepartamentoEnum",
@@ -18,4 +19,5 @@ __all__ = [
     "ParametrosBonus", "DEFAULT_TABLA_FACTOR_K",
     "Notificacion", "TipoNotificacionEnum",
     "ImportacionExcel",
+    "Configuracion",
 ]

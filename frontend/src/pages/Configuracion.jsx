@@ -1,20 +1,51 @@
-import { useState } from 'react'
-import { Settings, Bell, Calendar, Shield } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Settings, Bell, Shield, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import api from '../api/client'
+
+const DEFAULTS = {
+  nombre_empresa: 'GECOTEX INTERNACIONAL, S.L.',
+  zona_horaria: 'Europe/Madrid',
+  notif_dias_sin_expedientes: true,
+  notif_sobrecarga: true,
+  notif_tiempo_respuesta: true,
+  notif_objetivo_bajo: true,
+  dias_umbral_sin_expedientes: 3,
+  umbral_ocupacion: 110,
+}
 
 export default function Configuracion() {
-  const [config, setConfig] = useState({
-    nombre_empresa: 'GECOTEX INTERNACIONAL, S.L.',
-    zona_horaria: 'Europe/Madrid',
-    notif_dias_sin_expedientes: true,
-    notif_sobrecarga: true,
-    notif_tiempo_respuesta: true,
-    notif_objetivo_bajo: true,
-    dias_umbral_sin_expedientes: 3,
-    umbral_ocupacion: 110,
-  })
+  const [config, setConfig] = useState(DEFAULTS)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => toast.success('Configuración guardada (demo)')
+  useEffect(() => {
+    api.get('/configuracion')
+      .then(r => setConfig(r.data))
+      .catch(() => toast.error('Error al cargar configuración'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const r = await api.put('/configuracion', config)
+      setConfig(r.data)
+      toast.success('Configuración guardada')
+    } catch {
+      toast.error('Error al guardar configuración')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 size={24} className="animate-spin text-gecotex-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl space-y-5 animate-fade-in">
@@ -27,11 +58,19 @@ export default function Configuracion() {
         </div>
         <div>
           <label className="label">Nombre de la empresa</label>
-          <input className="input-field" value={config.nombre_empresa} onChange={e => setConfig(c => ({...c, nombre_empresa: e.target.value}))} />
+          <input
+            className="input-field"
+            value={config.nombre_empresa}
+            onChange={e => setConfig(c => ({ ...c, nombre_empresa: e.target.value }))}
+          />
         </div>
         <div>
           <label className="label">Zona horaria</label>
-          <select className="input-field" value={config.zona_horaria} onChange={e => setConfig(c => ({...c, zona_horaria: e.target.value}))}>
+          <select
+            className="input-field"
+            value={config.zona_horaria}
+            onChange={e => setConfig(c => ({ ...c, zona_horaria: e.target.value }))}
+          >
             <option value="Europe/Madrid">Europe/Madrid (UTC+1/+2)</option>
             <option value="UTC">UTC</option>
           </select>
@@ -50,18 +89,36 @@ export default function Configuracion() {
           { key: 'notif_objetivo_bajo', label: 'Aviso a fin de mes si el operario está por debajo del 70% de su objetivo UP' },
         ].map(n => (
           <label key={n.key} className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" className="accent-gecotex-primary w-4 h-4" checked={config[n.key]} onChange={e => setConfig(c => ({...c, [n.key]: e.target.checked}))} />
+            <input
+              type="checkbox"
+              className="accent-gecotex-primary w-4 h-4"
+              checked={config[n.key]}
+              onChange={e => setConfig(c => ({ ...c, [n.key]: e.target.checked }))}
+            />
             <span className="text-sm text-gray-700">{n.label}</span>
           </label>
         ))}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div>
             <label className="label">Días sin expedientes para alerta</label>
-            <input type="number" min="1" className="input-field" value={config.dias_umbral_sin_expedientes} onChange={e => setConfig(c => ({...c, dias_umbral_sin_expedientes: +e.target.value}))} />
+            <input
+              type="number"
+              min="1"
+              className="input-field"
+              value={config.dias_umbral_sin_expedientes}
+              onChange={e => setConfig(c => ({ ...c, dias_umbral_sin_expedientes: +e.target.value }))}
+            />
           </div>
           <div>
             <label className="label">Umbral ocupación (%)</label>
-            <input type="number" min="100" max="200" className="input-field" value={config.umbral_ocupacion} onChange={e => setConfig(c => ({...c, umbral_ocupacion: +e.target.value}))} />
+            <input
+              type="number"
+              min="100"
+              max="200"
+              className="input-field"
+              value={config.umbral_ocupacion}
+              onChange={e => setConfig(c => ({ ...c, umbral_ocupacion: +e.target.value }))}
+            />
           </div>
         </div>
       </div>
@@ -78,7 +135,10 @@ export default function Configuracion() {
         </div>
       </div>
 
-      <button onClick={handleSave} className="btn-primary">Guardar configuración</button>
+      <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2">
+        {saving && <Loader2 size={16} className="animate-spin" />}
+        {saving ? 'Guardando...' : 'Guardar configuración'}
+      </button>
     </div>
   )
 }

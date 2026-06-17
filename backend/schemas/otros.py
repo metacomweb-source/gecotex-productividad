@@ -172,6 +172,32 @@ class NotificacionResponse(BaseModel):
         from_attributes = True
 
 
+class ConfiguracionResponse(BaseModel):
+    id: int
+    nombre_empresa: str
+    zona_horaria: str
+    notif_dias_sin_expedientes: bool
+    notif_sobrecarga: bool
+    notif_tiempo_respuesta: bool
+    notif_objetivo_bajo: bool
+    dias_umbral_sin_expedientes: int
+    umbral_ocupacion: int
+
+    class Config:
+        from_attributes = True
+
+
+class ConfiguracionUpdate(BaseModel):
+    nombre_empresa: Optional[str] = None
+    zona_horaria: Optional[str] = None
+    notif_dias_sin_expedientes: Optional[bool] = None
+    notif_sobrecarga: Optional[bool] = None
+    notif_tiempo_respuesta: Optional[bool] = None
+    notif_objetivo_bajo: Optional[bool] = None
+    dias_umbral_sin_expedientes: Optional[int] = None
+    umbral_ocupacion: Optional[int] = None
+
+
 class ImportacionPreviewResponse(BaseModel):
     columnas_detectadas: List[str]
     mapeo_sugerido: dict
