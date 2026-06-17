@@ -78,19 +78,7 @@ export default function DashboardEquipo() {
       .finally(() => setLoading(false))
   }, [año, mes])
 
-  if (loading) return (
-    <div className="space-y-6">
-       <div className="h-10 w-64 bg-gecotex-border-soft rounded animate-pulse" />
-       <div className="grid grid-cols-3 gap-6">
-          <div className="h-48 col-span-1 bg-white rounded-xl animate-pulse" />
-          <div className="h-48 col-span-2 bg-white rounded-xl animate-pulse" />
-       </div>
-    </div>
-  )
-
-  const kTone = (k) => k >= 1.05 ? 'green' : k >= 0.85 ? 'orange' : 'red'
-
-  // Pseudo-random determinista por operario+día (sin parpadeo en re-renders)
+  // useMemo debe estar ANTES de cualquier early return (Rules of Hooks)
   const heatmap = useMemo(() => {
     const pseudoRand = (seed) => {
       let x = Math.sin(seed) * 10000
@@ -105,6 +93,18 @@ export default function DashboardEquipo() {
       })),
     }))
   }, [ranking])
+
+  if (loading) return (
+    <div className="space-y-6">
+       <div className="h-10 w-64 bg-gecotex-border-soft rounded animate-pulse" />
+       <div className="grid grid-cols-3 gap-6">
+          <div className="h-48 col-span-1 bg-white rounded-xl animate-pulse" />
+          <div className="h-48 col-span-2 bg-white rounded-xl animate-pulse" />
+       </div>
+    </div>
+  )
+
+  const kTone = (k) => k >= 1.05 ? 'green' : k >= 0.85 ? 'orange' : 'red'
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
