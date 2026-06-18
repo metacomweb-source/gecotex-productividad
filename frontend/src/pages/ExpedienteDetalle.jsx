@@ -138,9 +138,15 @@ const Timeline = ({ phases, onEdit }) => {
                       <X size={12} className="text-gecotex-ink-muted" />
                     </button>
                   </div>
-                  {value && (
+                  {(value || phases[editing]?.rawDate) && (
                     <button
-                      onClick={() => { setValue(''); }}
+                      onClick={async () => {
+                        setValue('')
+                        setSaving(true)
+                        await onEdit(editing, null)
+                        setSaving(false)
+                        setEditing(null)
+                      }}
                       className="text-[10px] text-gecotex-red hover:underline text-center"
                     >
                       Borrar fecha
@@ -235,20 +241,23 @@ export default function ExpedienteDetalle() {
   const handleDateEdit = async (phaseIndex, isoValue) => {
     const field = PHASE_FIELDS[phaseIndex]
     try {
-      await expedientesApi.actualizar(id, { [field]: isoValue || null })
-      setExp(e => ({ ...e, [field]: isoValue || null }))
+      const r = await expedientesApi.actualizar(id, { [field]: isoValue || null })
+      setExp(r.data)
       toast.success('Fecha actualizada')
     } catch {
       toast.error('Error al guardar la fecha')
     }
   }
 
+  const _warnDelta = (a, b, umbralMin) =>
+    !!(a && b && (new Date(b) - new Date(a)) / 60000 > umbralMin)
+
   const phases = [
-    { icon: Mail, label: 'Recepción', rawDate: exp?.fecha_recepcion_correo, delta: null },
-    { icon: Folder, label: 'Apertura', rawDate: exp?.fecha_apertura_dossier, delta: fmtDelta(exp?.fecha_recepcion_correo, exp?.fecha_apertura_dossier), warn: (new Date(exp?.fecha_apertura_dossier) - new Date(exp?.fecha_recepcion_correo)) / 60000 > 60 },
-    { icon: Send, label: 'Envío Aduana', rawDate: exp?.fecha_envio_aduana, delta: fmtDelta(exp?.fecha_apertura_dossier, exp?.fecha_envio_aduana) },
-    { icon: CheckCircle2, label: 'Levante', rawDate: exp?.fecha_levante, delta: fmtDelta(exp?.fecha_envio_aduana, exp?.fecha_levante) },
-    { icon: Receipt, label: 'Facturación', rawDate: exp?.fecha_envio_facturacion, delta: fmtDelta(exp?.fecha_levante, exp?.fecha_envio_facturacion) },
+    { icon: Mail,         label: 'Recepción',    rawDate: exp?.fecha_recepcion_correo,   delta: null },
+    { icon: Folder,       label: 'Apertura',     rawDate: exp?.fecha_apertura_dossier,   delta: fmtDelta(exp?.fecha_recepcion_correo, exp?.fecha_apertura_dossier),   warn: _warnDelta(exp?.fecha_recepcion_correo, exp?.fecha_apertura_dossier, 60) },
+    { icon: Send,         label: 'Envío Aduana', rawDate: exp?.fecha_envio_aduana,       delta: fmtDelta(exp?.fecha_apertura_dossier, exp?.fecha_envio_aduana),       warn: _warnDelta(exp?.fecha_apertura_dossier, exp?.fecha_envio_aduana, 120) },
+    { icon: CheckCircle2, label: 'Levante',      rawDate: exp?.fecha_levante,            delta: fmtDelta(exp?.fecha_envio_aduana, exp?.fecha_levante),                warn: _warnDelta(exp?.fecha_envio_aduana, exp?.fecha_levante, 1440) },
+    { icon: Receipt,      label: 'Facturación',  rawDate: exp?.fecha_envio_facturacion,  delta: fmtDelta(exp?.fecha_levante, exp?.fecha_envio_facturacion),           warn: _warnDelta(exp?.fecha_levante, exp?.fecha_envio_facturacion, 2880) },
   ]
 
   if (loading) return (
