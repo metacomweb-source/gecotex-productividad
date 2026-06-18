@@ -213,11 +213,10 @@ export default function ConfigBonus() {
   const [form, setForm]             = useState(null)
   const [savedForm, setSavedForm]   = useState(null)
   const [showModal, setShowModal]   = useState(false)
-  const [openBlocks, setOpenBlocks] = useState({ b1: true, b2: true, b3: true, b4: false, b5: true })
-  const [tabArea, setTabArea]       = useState(2)
+  const [openBlocks, setOpenBlocks] = useState({ b1: true, b2: true, b3: true, b4: false, b5a: true, b5b: true, b5c: true })
   const [editFactor, setEditFactor] = useState(null)
   const [newFactor, setNewFactor]   = useState({ area: 2, nombre: '', descripcion: '', nota_contexto: '' })
-  const [showNewFactor, setShowNewFactor] = useState(false)
+  const [showNewFactorArea, setShowNewFactorArea] = useState(null)
   const [sim, setSim] = useState({ k: '1.0', sla: '90', reg: '95', a2: '7', a3: '7', a4: '7', salario: '24000', pctMax: '5' })
 
   const cargar = async () => {
@@ -325,10 +324,10 @@ export default function ConfigBonus() {
   const handleCrearFactor = async () => {
     if (!newFactor.nombre.trim()) { toast.error('El nombre es obligatorio'); return }
     try {
-      const r = await api.post('/bonus/factores', { ...newFactor, area: tabArea })
+      const r = await api.post('/bonus/factores', newFactor)
       setFactores(fs => [...fs, r.data])
-      setNewFactor({ area: tabArea, nombre: '', descripcion: '', nota_contexto: '' })
-      setShowNewFactor(false)
+      setNewFactor({ area: newFactor.area, nombre: '', descripcion: '', nota_contexto: '' })
+      setShowNewFactorArea(null)
       toast.success('Factor creado')
     } catch (e) { toast.error(e.response?.data?.detail || 'Error al crear factor') }
   }
@@ -342,7 +341,6 @@ export default function ConfigBonus() {
 
   const pctTotal  = Math.round((form.peso_area1 + form.peso_area2 + form.peso_area3 + form.peso_area4) * 100)
   const cfg1Total = Math.round((form.config_area1.peso_factor_k + form.config_area1.peso_sla + form.config_area1.peso_registro) * 100)
-  const factoresTab = factores.filter(f => f.area === tabArea)
 
   return (
     <div className="animate-fade-in">
@@ -658,7 +656,7 @@ export default function ConfigBonus() {
           </Block>
 
           {/* ── BLOCK 4: Config Área 1 ────────────────────────────────────── */}
-          <Block title="Configuración del Área 1 — Productividad DUAs" icon="📊" accentColor="#1F5C99"
+          <Block title="ÁREA 1 — PRODUCTIVIDAD DE DUAs" icon="📊" accentColor="#1F5C99"
             open={openBlocks.b4} onToggle={() => toggleBlock('b4')}
             summary={`K:${Math.round(form.config_area1.peso_factor_k*100)}% · SLA:${Math.round(form.config_area1.peso_sla*100)}% · Reg:${Math.round(form.config_area1.peso_registro*100)}% · SLA=${form.config_area1.sla_horas}h`}>
 
@@ -769,62 +767,32 @@ export default function ConfigBonus() {
             </div>
           </Block>
 
-          {/* ── BLOCK 5: Factores evaluación ──────────────────────────────── */}
-          <Block title="Factores de evaluación (Áreas 2, 3 y 4)" icon="📋" accentColor="#5D6D7E"
-            open={openBlocks.b5} onToggle={() => toggleBlock('b5')}
-            summary={`${factores.filter(f => f.activo).length} activos de ${factores.length} totales`}>
+          {/* ── BLOCK 5a: Área 2 — Calidad Operativa ─────────────────────── */}
+          <Block title="ÁREA 2 — CALIDAD OPERATIVA" icon="✅" accentColor="#196B4A"
+            open={openBlocks.b5a} onToggle={() => toggleBlock('b5a')}
+            summary={`${factores.filter(f => f.area === 2 && f.activo).length} factores activos`}>
 
             <p className="text-xs text-gecotex-ink-sub">
-              Criterios que evalúan tanto el empleado como la dirección. Puedes editar, añadir y activar/desactivar cada uno.
+              Criterios de calidad operativa. Los evalúa tanto el empleado como la dirección.
             </p>
 
-            {/* Area tabs */}
-            <div className="flex gap-1 p-1 bg-gecotex-bg rounded-xl border border-gecotex-border">
-              {[2,3,4].map(a => {
-                const m   = AREA_META[a]
-                const cnt = factores.filter(f => f.area === a && f.activo).length
-                return (
-                  <button key={a} type="button"
-                    onClick={() => { setTabArea(a); setEditFactor(null); setShowNewFactor(false) }}
-                    className={clsx(
-                      'flex-1 py-2 px-2 rounded-lg text-[11.5px] font-medium transition-colors',
-                      tabArea === a
-                        ? 'bg-white shadow-gx-sm text-gecotex-ink font-semibold'
-                        : 'text-gecotex-ink-sub hover:text-gecotex-ink'
-                    )}>
-                    {m.icon} Área {a}
-                    <span className={clsx('ml-1 text-[10px]',
-                      tabArea === a ? 'text-gecotex-primary font-bold' : 'text-gecotex-ink-muted')}>
-                      ({cnt})
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Factor list */}
             <div className="space-y-2">
-              {factoresTab.length === 0 && (
-                <p className="text-xs text-gecotex-ink-muted italic text-center py-6">
-                  Sin factores configurados para esta área
-                </p>
+              {factores.filter(f => f.area === 2).length === 0 && (
+                <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
               )}
-              {factoresTab.map(f => (
+              {factores.filter(f => f.area === 2).map(f => (
                 <div key={f.id}
                   className={clsx('rounded-xl border transition-all',
                     f.activo ? 'bg-white border-gecotex-border' : 'bg-gecotex-bg border-gecotex-border-soft opacity-60')}>
                   {editFactor?.id === f.id ? (
                     <div className="p-4 space-y-3">
-                      <input className="input-field text-sm font-medium"
-                        value={editFactor.data.nombre || ''}
+                      <input className="input-field text-sm font-medium" value={editFactor.data.nombre || ''}
                         onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nombre: e.target.value } }))}
                         placeholder="Nombre del factor" />
-                      <input className="input-field text-xs"
-                        value={editFactor.data.descripcion || ''}
+                      <input className="input-field text-xs" value={editFactor.data.descripcion || ''}
                         onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, descripcion: e.target.value } }))}
                         placeholder="Descripción breve" />
-                      <input className="input-field text-xs"
-                        value={editFactor.data.nota_contexto || ''}
+                      <input className="input-field text-xs" value={editFactor.data.nota_contexto || ''}
                         onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nota_contexto: e.target.value } }))}
                         placeholder="Nota de contexto / criterios de puntuación" />
                       <div className="flex gap-2 justify-end">
@@ -837,13 +805,8 @@ export default function ConfigBonus() {
                   ) : (
                     <div className="flex items-start gap-3 p-3">
                       <div className="flex-1 min-w-0">
-                        <p className={clsx('text-[13px] font-medium text-gecotex-ink',
-                          !f.activo && 'line-through text-gecotex-ink-muted')}>
-                          {f.nombre}
-                        </p>
-                        {f.nota_contexto && (
-                          <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>
-                        )}
+                        <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
                         {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -852,15 +815,10 @@ export default function ConfigBonus() {
                           className="p-1.5 rounded-lg hover:bg-gecotex-bg text-gecotex-ink-muted hover:text-gecotex-ink transition-colors">
                           <Pencil size={13} />
                         </button>
-                        <button type="button"
-                          onClick={() => handleToggleFactor(f)}
-                          disabled={savingFactor === f.id}
+                        <button type="button" onClick={() => handleToggleFactor(f)} disabled={savingFactor === f.id}
                           className="p-1.5 rounded-lg hover:bg-gecotex-bg transition-colors">
-                          {savingFactor === f.id
-                            ? <Loader2 size={16} className="animate-spin text-gray-400" />
-                            : f.activo
-                              ? <ToggleRight size={18} className="text-gecotex-primary" />
-                              : <ToggleLeft  size={18} className="text-gray-400" />}
+                          {savingFactor === f.id ? <Loader2 size={16} className="animate-spin text-gray-400" />
+                            : f.activo ? <ToggleRight size={18} className="text-gecotex-primary" /> : <ToggleLeft size={18} className="text-gray-400" />}
                         </button>
                       </div>
                     </div>
@@ -869,24 +827,17 @@ export default function ConfigBonus() {
               ))}
             </div>
 
-            {/* New factor */}
-            {showNewFactor ? (
+            {showNewFactorArea === 2 ? (
               <div className="rounded-xl border-2 border-dashed border-gecotex-blue bg-gecotex-blue-light/30 p-4 space-y-3">
-                <p className="text-xs font-semibold text-gecotex-blue">Nuevo factor — Área {tabArea}</p>
-                <input className="input-field text-sm"
-                  value={newFactor.nombre}
-                  onChange={e => setNewFactor(nf => ({ ...nf, nombre: e.target.value }))}
-                  placeholder="Nombre del factor *" />
-                <input className="input-field text-xs"
-                  value={newFactor.descripcion}
-                  onChange={e => setNewFactor(nf => ({ ...nf, descripcion: e.target.value }))}
-                  placeholder="Descripción breve" />
-                <input className="input-field text-xs"
-                  value={newFactor.nota_contexto}
-                  onChange={e => setNewFactor(nf => ({ ...nf, nota_contexto: e.target.value }))}
-                  placeholder="Nota de contexto / criterios de puntuación" />
+                <p className="text-xs font-semibold text-gecotex-blue">Nuevo factor — Área 2</p>
+                <input className="input-field text-sm" value={newFactor.nombre}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nombre: e.target.value }))} placeholder="Nombre del factor *" />
+                <input className="input-field text-xs" value={newFactor.descripcion}
+                  onChange={e => setNewFactor(nf => ({ ...nf, descripcion: e.target.value }))} placeholder="Descripción breve" />
+                <input className="input-field text-xs" value={newFactor.nota_contexto}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nota_contexto: e.target.value }))} placeholder="Nota de contexto / criterios de puntuación" />
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setShowNewFactor(false)} className="btn-secondary text-xs">Cancelar</button>
+                  <button type="button" onClick={() => setShowNewFactorArea(null)} className="btn-secondary text-xs">Cancelar</button>
                   <button type="button" onClick={handleCrearFactor} className="btn-primary text-xs flex items-center gap-1">
                     <Plus size={12} /> Crear factor
                   </button>
@@ -894,9 +845,179 @@ export default function ConfigBonus() {
               </div>
             ) : (
               <button type="button"
-                onClick={() => { setNewFactor({ area: tabArea, nombre: '', descripcion: '', nota_contexto: '' }); setShowNewFactor(true) }}
+                onClick={() => { setNewFactor({ area: 2, nombre: '', descripcion: '', nota_contexto: '' }); setShowNewFactorArea(2) }}
                 className="w-full py-2.5 rounded-xl border-2 border-dashed border-gecotex-border text-xs text-gecotex-ink-muted hover:border-gecotex-blue hover:text-gecotex-blue transition-colors flex items-center justify-center gap-1.5">
-                <Plus size={13} /> Añadir factor al Área {tabArea}
+                <Plus size={13} /> Añadir factor al Área 2
+              </button>
+            )}
+          </Block>
+
+          {/* ── BLOCK 5b: Área 3 — Gecotex Corporate ─────────────────────── */}
+          <Block title="ÁREA 3 — GECOTEX CORPORATE" icon="🤝" accentColor="#7B3F00"
+            open={openBlocks.b5b} onToggle={() => toggleBlock('b5b')}
+            summary={`${factores.filter(f => f.area === 3 && f.activo).length} factores activos`}>
+
+            <p className="text-xs text-gecotex-ink-sub">
+              Criterios corporativos y de valores GECOTEX. Los evalúa tanto el empleado como la dirección.
+            </p>
+
+            <div className="space-y-2">
+              {factores.filter(f => f.area === 3).length === 0 && (
+                <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
+              )}
+              {factores.filter(f => f.area === 3).map(f => (
+                <div key={f.id}
+                  className={clsx('rounded-xl border transition-all',
+                    f.activo ? 'bg-white border-gecotex-border' : 'bg-gecotex-bg border-gecotex-border-soft opacity-60')}>
+                  {editFactor?.id === f.id ? (
+                    <div className="p-4 space-y-3">
+                      <input className="input-field text-sm font-medium" value={editFactor.data.nombre || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nombre: e.target.value } }))}
+                        placeholder="Nombre del factor" />
+                      <input className="input-field text-xs" value={editFactor.data.descripcion || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, descripcion: e.target.value } }))}
+                        placeholder="Descripción breve" />
+                      <input className="input-field text-xs" value={editFactor.data.nota_contexto || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nota_contexto: e.target.value } }))}
+                        placeholder="Nota de contexto / criterios de puntuación" />
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" onClick={() => setEditFactor(null)} className="btn-secondary text-xs">Cancelar</button>
+                        <button type="button" onClick={handleUpdateFactor} className="btn-primary text-xs flex items-center gap-1">
+                          <Check size={12} /> Guardar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
+                        {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button type="button"
+                          onClick={() => setEditFactor({ id: f.id, data: { nombre: f.nombre, descripcion: f.descripcion || '', nota_contexto: f.nota_contexto || '' } })}
+                          className="p-1.5 rounded-lg hover:bg-gecotex-bg text-gecotex-ink-muted hover:text-gecotex-ink transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                        <button type="button" onClick={() => handleToggleFactor(f)} disabled={savingFactor === f.id}
+                          className="p-1.5 rounded-lg hover:bg-gecotex-bg transition-colors">
+                          {savingFactor === f.id ? <Loader2 size={16} className="animate-spin text-gray-400" />
+                            : f.activo ? <ToggleRight size={18} className="text-gecotex-primary" /> : <ToggleLeft size={18} className="text-gray-400" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {showNewFactorArea === 3 ? (
+              <div className="rounded-xl border-2 border-dashed border-gecotex-blue bg-gecotex-blue-light/30 p-4 space-y-3">
+                <p className="text-xs font-semibold text-gecotex-blue">Nuevo factor — Área 3</p>
+                <input className="input-field text-sm" value={newFactor.nombre}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nombre: e.target.value }))} placeholder="Nombre del factor *" />
+                <input className="input-field text-xs" value={newFactor.descripcion}
+                  onChange={e => setNewFactor(nf => ({ ...nf, descripcion: e.target.value }))} placeholder="Descripción breve" />
+                <input className="input-field text-xs" value={newFactor.nota_contexto}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nota_contexto: e.target.value }))} placeholder="Nota de contexto / criterios de puntuación" />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setShowNewFactorArea(null)} className="btn-secondary text-xs">Cancelar</button>
+                  <button type="button" onClick={handleCrearFactor} className="btn-primary text-xs flex items-center gap-1">
+                    <Plus size={12} /> Crear factor
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button"
+                onClick={() => { setNewFactor({ area: 3, nombre: '', descripcion: '', nota_contexto: '' }); setShowNewFactorArea(3) }}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-gecotex-border text-xs text-gecotex-ink-muted hover:border-gecotex-blue hover:text-gecotex-blue transition-colors flex items-center justify-center gap-1.5">
+                <Plus size={13} /> Añadir factor al Área 3
+              </button>
+            )}
+          </Block>
+
+          {/* ── BLOCK 5c: Área 4 — Digitalización ────────────────────────── */}
+          <Block title="ÁREA 4 — DIGITALIZACIÓN Y ADAPTACIÓN" icon="💡" accentColor="#5B2C6F"
+            open={openBlocks.b5c} onToggle={() => toggleBlock('b5c')}
+            summary={`${factores.filter(f => f.area === 4 && f.activo).length} factores activos`}>
+
+            <p className="text-xs text-gecotex-ink-sub">
+              Criterios de digitalización y adaptación al cambio. Los evalúa tanto el empleado como la dirección.
+            </p>
+
+            <div className="space-y-2">
+              {factores.filter(f => f.area === 4).length === 0 && (
+                <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
+              )}
+              {factores.filter(f => f.area === 4).map(f => (
+                <div key={f.id}
+                  className={clsx('rounded-xl border transition-all',
+                    f.activo ? 'bg-white border-gecotex-border' : 'bg-gecotex-bg border-gecotex-border-soft opacity-60')}>
+                  {editFactor?.id === f.id ? (
+                    <div className="p-4 space-y-3">
+                      <input className="input-field text-sm font-medium" value={editFactor.data.nombre || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nombre: e.target.value } }))}
+                        placeholder="Nombre del factor" />
+                      <input className="input-field text-xs" value={editFactor.data.descripcion || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, descripcion: e.target.value } }))}
+                        placeholder="Descripción breve" />
+                      <input className="input-field text-xs" value={editFactor.data.nota_contexto || ''}
+                        onChange={e => setEditFactor(ef => ({ ...ef, data: { ...ef.data, nota_contexto: e.target.value } }))}
+                        placeholder="Nota de contexto / criterios de puntuación" />
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" onClick={() => setEditFactor(null)} className="btn-secondary text-xs">Cancelar</button>
+                        <button type="button" onClick={handleUpdateFactor} className="btn-primary text-xs flex items-center gap-1">
+                          <Check size={12} /> Guardar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
+                        {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button type="button"
+                          onClick={() => setEditFactor({ id: f.id, data: { nombre: f.nombre, descripcion: f.descripcion || '', nota_contexto: f.nota_contexto || '' } })}
+                          className="p-1.5 rounded-lg hover:bg-gecotex-bg text-gecotex-ink-muted hover:text-gecotex-ink transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                        <button type="button" onClick={() => handleToggleFactor(f)} disabled={savingFactor === f.id}
+                          className="p-1.5 rounded-lg hover:bg-gecotex-bg transition-colors">
+                          {savingFactor === f.id ? <Loader2 size={16} className="animate-spin text-gray-400" />
+                            : f.activo ? <ToggleRight size={18} className="text-gecotex-primary" /> : <ToggleLeft size={18} className="text-gray-400" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {showNewFactorArea === 4 ? (
+              <div className="rounded-xl border-2 border-dashed border-gecotex-blue bg-gecotex-blue-light/30 p-4 space-y-3">
+                <p className="text-xs font-semibold text-gecotex-blue">Nuevo factor — Área 4</p>
+                <input className="input-field text-sm" value={newFactor.nombre}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nombre: e.target.value }))} placeholder="Nombre del factor *" />
+                <input className="input-field text-xs" value={newFactor.descripcion}
+                  onChange={e => setNewFactor(nf => ({ ...nf, descripcion: e.target.value }))} placeholder="Descripción breve" />
+                <input className="input-field text-xs" value={newFactor.nota_contexto}
+                  onChange={e => setNewFactor(nf => ({ ...nf, nota_contexto: e.target.value }))} placeholder="Nota de contexto / criterios de puntuación" />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setShowNewFactorArea(null)} className="btn-secondary text-xs">Cancelar</button>
+                  <button type="button" onClick={handleCrearFactor} className="btn-primary text-xs flex items-center gap-1">
+                    <Plus size={12} /> Crear factor
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button"
+                onClick={() => { setNewFactor({ area: 4, nombre: '', descripcion: '', nota_contexto: '' }); setShowNewFactorArea(4) }}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-gecotex-border text-xs text-gecotex-ink-muted hover:border-gecotex-blue hover:text-gecotex-blue transition-colors flex items-center justify-center gap-1.5">
+                <Plus size={13} /> Añadir factor al Área 4
               </button>
             )}
           </Block>
