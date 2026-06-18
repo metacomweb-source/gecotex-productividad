@@ -76,7 +76,7 @@ export default function ExpedienteFormWizard() {
     servicios_adicionales: [],
     canal_respuesta: 'pendiente',
     fecha_recepcion_correo: '',
-    fecha_apertura_dossier: '',
+    fecha_apertura_dossier: new Date().toISOString().slice(0, 16),
     fecha_envio_aduana: '',
     fecha_levante: '',
     fecha_envio_facturacion: '',
@@ -275,6 +275,29 @@ export default function ExpedienteFormWizard() {
                 </div>
                 <span className="text-xl font-black font-mono text-gecotex-blue">{upPreview.toFixed(2)} UPs</span>
               </div>
+
+              {/* Fecha apertura — sello inmediato al abrir el dossier */}
+              <div className="mt-4 bg-white rounded-xl border border-gecotex-border-soft p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[13px] font-semibold text-gecotex-ink flex items-center gap-2">
+                    <Calendar size={15} className="text-gecotex-blue" />
+                    📂 Apertura del dossier
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, fecha_apertura_dossier: ahora() }))}
+                    className="text-[11px] font-bold text-gecotex-blue hover:underline"
+                  >
+                    Ahora
+                  </button>
+                </div>
+                <input
+                  type="datetime-local"
+                  className="input-field text-sm"
+                  value={form.fecha_apertura_dossier}
+                  onChange={e => setForm(f => ({ ...f, fecha_apertura_dossier: e.target.value }))}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -369,7 +392,6 @@ export default function ExpedienteFormWizard() {
           <div className="space-y-3">
             {[
               { key: 'fecha_recepcion_correo', label: 'Recepción del correo', icon: '📧' },
-              { key: 'fecha_apertura_dossier', label: 'Apertura del dossier', icon: '📂' },
               { key: 'fecha_envio_aduana', label: 'Envío a aduana', icon: '📤' },
               { key: 'fecha_levante', label: 'Levante', icon: '✅' },
               { key: 'fecha_envio_facturacion', label: 'Envío a facturación', icon: '🧾' },
