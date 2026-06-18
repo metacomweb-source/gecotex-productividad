@@ -88,16 +88,26 @@ def calcular_puntuacion_area1(db: Session, empleado_id: int, año: int, semestre
     return {"factor_k_promedio": factor_k, "pct_sla": pct_sla, "pct_registro": pct_registro, "puntuacion_area1": puntuacion}
 
 
-def calcular_puntuacion_area(respuestas: list, peso_auto: float, peso_dir: float) -> float:
-    notas = []
+def calcular_puntuacion_area(respuestas: list, peso_auto: float, peso_dir: float, factores: list = None) -> float:
+    peso_map = {f.id: (f.peso if f.peso is not None else 1.0) for f in factores} if factores else {}
+    notas_pesos = []
     for r in respuestas:
         if r.nota_auto is not None and r.nota_dir is not None:
-            notas.append(r.nota_auto * peso_auto + r.nota_dir * peso_dir)
+            nota = r.nota_auto * peso_auto + r.nota_dir * peso_dir
         elif r.nota_dir is not None:
-            notas.append(r.nota_dir)
+            nota = r.nota_dir
         elif r.nota_auto is not None:
-            notas.append(r.nota_auto)
-    return round(sum(notas) / len(notas), 2) if notas else 0.0
+            nota = r.nota_auto
+        else:
+            continue
+        p = peso_map.get(r.factor_id, 1.0)
+        notas_pesos.append((nota, p))
+    if not notas_pesos:
+        return 0.0
+    total_peso = sum(p for _, p in notas_pesos)
+    if total_peso == 0:
+        return 0.0
+    return round(sum(n * p for n, p in notas_pesos) / total_peso, 2)
 
 
 def calcular_puntuacion_total(p1: float, p2: float, p3: float, p4: float, config: ConfigBonusGlobal) -> float:
@@ -171,7 +181,8 @@ def calcular_evaluacion_completa(db: Session, evaluacion_id: int):
 
     # Áreas 2, 3, 4
     for area_num in (2, 3, 4):
-        ids_area = [f.id for f in factores if f.area == area_num]
+        factores_area = [f for f in factores if f.area == area_num]
+        ids_area = [f.id for f in factores_area]
         resp = db.query(RespuestaFactor).filter(
             RespuestaFactor.evaluacion_id == evaluacion_id,
             RespuestaFactor.factor_id.in_(ids_area),
@@ -183,7 +194,7 @@ def calcular_evaluacion_completa(db: Session, evaluacion_id: int):
                 r.nota_final = r.nota_dir
             elif r.nota_auto is not None:
                 r.nota_final = r.nota_auto
-        puntuacion = calcular_puntuacion_area(resp, config.peso_auto_evaluacion, config.peso_dir_evaluacion)
+        puntuacion = calcular_puntuacion_area(resp, config.peso_auto_evaluacion, config.peso_dir_evaluacion, factores_area)
         setattr(ev, f"puntuacion_area{area_num}", puntuacion)
 
     # Puntuación total

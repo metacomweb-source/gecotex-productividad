@@ -48,6 +48,16 @@ FACTORES = [
 ]
 
 def patch():
+    # Migración: añadir columna peso si no existe (SQLite compatible)
+    try:
+        with engine.connect() as conn:
+            conn.execute(__import__('sqlalchemy').text(
+                "ALTER TABLE factores_evaluacion ADD COLUMN peso REAL"
+            ))
+            conn.commit()
+    except Exception:
+        pass  # La columna ya existe
+
     db = SessionLocal()
     try:
         creados = 0

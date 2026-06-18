@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, JSON
+from sqlalchemy import Column, Integer, String, Boolean, Text, JSON, Float
 from database import Base
 
 
@@ -13,3 +13,4 @@ class FactorEvaluacion(Base):
     activo = Column(Boolean, default=True)
     nota_contexto = Column(String, nullable=True)
     descripciones_niveles = Column(JSON, nullable=True)
+    peso = Column(Float, nullable=True)

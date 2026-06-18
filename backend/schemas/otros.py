@@ -268,6 +268,7 @@ class FactorEvaluacionResponse(BaseModel):
     activo: bool
     nota_contexto: Optional[str]
     descripciones_niveles: Optional[Any] = None
+    peso: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -280,6 +281,7 @@ class FactorEvaluacionCreate(BaseModel):
     orden: int = 0
     nota_contexto: Optional[str] = None
     descripciones_niveles: Optional[Any] = None
+    peso: Optional[float] = None
 
 
 class FactorEvaluacionUpdate(BaseModel):
@@ -289,6 +291,7 @@ class FactorEvaluacionUpdate(BaseModel):
     activo: Optional[bool] = None
     nota_contexto: Optional[str] = None
     descripciones_niveles: Optional[Any] = None
+    peso: Optional[float] = None
 
 
 class RespuestaFactorItem(BaseModel):

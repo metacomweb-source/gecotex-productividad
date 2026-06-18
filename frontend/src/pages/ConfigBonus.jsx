@@ -217,6 +217,8 @@ export default function ConfigBonus() {
   const [editFactor, setEditFactor] = useState(null)
   const [newFactor, setNewFactor]   = useState({ area: 2, nombre: '', descripcion: '', nota_contexto: '' })
   const [showNewFactorArea, setShowNewFactorArea] = useState(null)
+  const [pesosLocal, setPesosLocal] = useState({})
+  const [savingPesoId, setSavingPesoId] = useState(null)
   const [sim, setSim] = useState({ k: '1.0', sla: '90', reg: '95', a2: '7', a3: '7', a4: '7', salario: '24000', pctMax: '5' })
 
   const cargar = async () => {
@@ -227,8 +229,12 @@ export default function ConfigBonus() {
         api.get('/bonus/factores'),
       ])
       const cfg = cfgR.status === 'fulfilled' ? cfgR.value.data : null
+      const facs = facR.status === 'fulfilled' ? facR.value.data : []
       setConfig(cfg)
-      setFactores(facR.status === 'fulfilled' ? facR.value.data : [])
+      setFactores(facs)
+      const initPesos = {}
+      facs.forEach(f => { initPesos[f.id] = f.peso != null ? String(Math.round(f.peso * 100)) : '' })
+      setPesosLocal(initPesos)
       const f = buildForm(cfg, año, semestre)
       setForm(f)
       setSavedForm(JSON.parse(JSON.stringify(f)))
@@ -326,10 +332,22 @@ export default function ConfigBonus() {
     try {
       const r = await api.post('/bonus/factores', newFactor)
       setFactores(fs => [...fs, r.data])
+      setPesosLocal(p => ({ ...p, [r.data.id]: '' }))
       setNewFactor({ area: newFactor.area, nombre: '', descripcion: '', nota_contexto: '' })
       setShowNewFactorArea(null)
       toast.success('Factor creado')
     } catch (e) { toast.error(e.response?.data?.detail || 'Error al crear factor') }
+  }
+
+  const handleSavePeso = async (factorId, rawVal) => {
+    const pct = parseFloat(rawVal)
+    if (isNaN(pct) || pct < 0 || pct > 100) return
+    setSavingPesoId(factorId)
+    try {
+      await api.put(`/bonus/factores/${factorId}`, { peso: pct / 100 })
+      setFactores(fs => fs.map(f => f.id === factorId ? { ...f, peso: pct / 100 } : f))
+    } catch { toast.error('Error al guardar el peso') }
+    finally { setSavingPesoId(null) }
   }
 
   if (loading) return (
@@ -341,6 +359,17 @@ export default function ConfigBonus() {
 
   const pctTotal  = Math.round((form.peso_area1 + form.peso_area2 + form.peso_area3 + form.peso_area4) * 100)
   const cfg1Total = Math.round((form.config_area1.peso_factor_k + form.config_area1.peso_sla + form.config_area1.peso_registro) * 100)
+
+  const FACTOR_COLORS = ['#1F5C99', '#196B4A', '#7B3F00', '#5B2C6F', '#B7770D', '#8B3A3A', '#2D7D9A']
+
+  const pesoAreaInfo = (areaNum) => {
+    const activos = factores.filter(f => f.area === areaNum && f.activo)
+    const vals = activos.map(f => parseFloat(pesosLocal[f.id] ?? '') || 0)
+    const todosDefinidos = activos.every(f => (pesosLocal[f.id] ?? '') !== '')
+    const total = vals.reduce((s, v) => s + v, 0)
+    const ok = todosDefinidos && Math.abs(total - 100) < 1
+    return { activos, vals, total, ok, todosDefinidos }
+  }
 
   return (
     <div className="animate-fade-in">
@@ -776,6 +805,35 @@ export default function ConfigBonus() {
               Criterios de calidad operativa. Los evalúa tanto el empleado como la dirección.
             </p>
 
+            {/* Barra distribución pesos área 2 */}
+            {(() => {
+              const { activos, total, ok, todosDefinidos } = pesoAreaInfo(2)
+              if (activos.length === 0) return null
+              const eq = 100 / activos.length
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-gecotex-ink-sub uppercase tracking-widest">Importancia por factor</p>
+                    <button type="button" className="text-[10px] text-gecotex-primary hover:underline"
+                      onClick={() => activos.forEach(f => { const v = String(Math.round(eq)); setPesosLocal(p => ({ ...p, [f.id]: v })); handleSavePeso(f.id, v) })}>
+                      Distribuir igual
+                    </button>
+                  </div>
+                  <div className="flex rounded-lg overflow-hidden h-5 border border-gecotex-border">
+                    {activos.map((f, i) => {
+                      const pct = (pesosLocal[f.id] ?? '') !== '' ? parseFloat(pesosLocal[f.id]) : eq
+                      return <div key={f.id} title={`${f.nombre}: ${Math.round(pct)}%`}
+                        style={{ width: `${pct}%`, background: FACTOR_COLORS[i % FACTOR_COLORS.length], minWidth: pct > 0 ? 2 : 0 }}
+                        className="transition-all duration-300 flex items-center justify-center text-[9px] text-white font-bold">
+                        {pct >= 15 && `${Math.round(pct)}%`}
+                      </div>
+                    })}
+                  </div>
+                  {todosDefinidos && <OkBadge ok={ok} okText={`Total: ${Math.round(total)}% ✓`} errText={`Total: ${Math.round(total)}% — Deben sumar exactamente 100%`} />}
+                </div>
+              )
+            })()}
+
             <div className="space-y-2">
               {factores.filter(f => f.area === 2).length === 0 && (
                 <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
@@ -803,12 +861,26 @@ export default function ConfigBonus() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3 p-3">
+                    <div className="flex items-center gap-2 p-3">
                       <div className="flex-1 min-w-0">
                         <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
-                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-1">{f.nota_contexto}</p>}
                         {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
                       </div>
+                      {f.activo && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {savingPesoId === f.id
+                            ? <Loader2 size={13} className="animate-spin text-gecotex-primary" />
+                            : <input type="number" min={0} max={100} step={5}
+                                className="input-field text-xs py-1 w-16 text-center"
+                                placeholder="—"
+                                value={pesosLocal[f.id] ?? ''}
+                                onChange={e => setPesosLocal(p => ({ ...p, [f.id]: e.target.value }))}
+                                onBlur={e => handleSavePeso(f.id, e.target.value)} />
+                          }
+                          <span className="text-[10px] text-gecotex-ink-muted">%</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button type="button"
                           onClick={() => setEditFactor({ id: f.id, data: { nombre: f.nombre, descripcion: f.descripcion || '', nota_contexto: f.nota_contexto || '' } })}
@@ -861,6 +933,35 @@ export default function ConfigBonus() {
               Criterios corporativos y de valores GECOTEX. Los evalúa tanto el empleado como la dirección.
             </p>
 
+            {/* Barra distribución pesos área 3 */}
+            {(() => {
+              const { activos, total, ok, todosDefinidos } = pesoAreaInfo(3)
+              if (activos.length === 0) return null
+              const eq = 100 / activos.length
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-gecotex-ink-sub uppercase tracking-widest">Importancia por factor</p>
+                    <button type="button" className="text-[10px] text-gecotex-primary hover:underline"
+                      onClick={() => activos.forEach(f => { const v = String(Math.round(eq)); setPesosLocal(p => ({ ...p, [f.id]: v })); handleSavePeso(f.id, v) })}>
+                      Distribuir igual
+                    </button>
+                  </div>
+                  <div className="flex rounded-lg overflow-hidden h-5 border border-gecotex-border">
+                    {activos.map((f, i) => {
+                      const pct = (pesosLocal[f.id] ?? '') !== '' ? parseFloat(pesosLocal[f.id]) : eq
+                      return <div key={f.id} title={`${f.nombre}: ${Math.round(pct)}%`}
+                        style={{ width: `${pct}%`, background: FACTOR_COLORS[i % FACTOR_COLORS.length], minWidth: pct > 0 ? 2 : 0 }}
+                        className="transition-all duration-300 flex items-center justify-center text-[9px] text-white font-bold">
+                        {pct >= 15 && `${Math.round(pct)}%`}
+                      </div>
+                    })}
+                  </div>
+                  {todosDefinidos && <OkBadge ok={ok} okText={`Total: ${Math.round(total)}% ✓`} errText={`Total: ${Math.round(total)}% — Deben sumar exactamente 100%`} />}
+                </div>
+              )
+            })()}
+
             <div className="space-y-2">
               {factores.filter(f => f.area === 3).length === 0 && (
                 <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
@@ -888,12 +989,26 @@ export default function ConfigBonus() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3 p-3">
+                    <div className="flex items-center gap-2 p-3">
                       <div className="flex-1 min-w-0">
                         <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
-                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-1">{f.nota_contexto}</p>}
                         {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
                       </div>
+                      {f.activo && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {savingPesoId === f.id
+                            ? <Loader2 size={13} className="animate-spin text-gecotex-primary" />
+                            : <input type="number" min={0} max={100} step={5}
+                                className="input-field text-xs py-1 w-16 text-center"
+                                placeholder="—"
+                                value={pesosLocal[f.id] ?? ''}
+                                onChange={e => setPesosLocal(p => ({ ...p, [f.id]: e.target.value }))}
+                                onBlur={e => handleSavePeso(f.id, e.target.value)} />
+                          }
+                          <span className="text-[10px] text-gecotex-ink-muted">%</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button type="button"
                           onClick={() => setEditFactor({ id: f.id, data: { nombre: f.nombre, descripcion: f.descripcion || '', nota_contexto: f.nota_contexto || '' } })}
@@ -946,6 +1061,35 @@ export default function ConfigBonus() {
               Criterios de digitalización y adaptación al cambio. Los evalúa tanto el empleado como la dirección.
             </p>
 
+            {/* Barra distribución pesos área 4 */}
+            {(() => {
+              const { activos, total, ok, todosDefinidos } = pesoAreaInfo(4)
+              if (activos.length === 0) return null
+              const eq = 100 / activos.length
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-gecotex-ink-sub uppercase tracking-widest">Importancia por factor</p>
+                    <button type="button" className="text-[10px] text-gecotex-primary hover:underline"
+                      onClick={() => activos.forEach(f => { const v = String(Math.round(eq)); setPesosLocal(p => ({ ...p, [f.id]: v })); handleSavePeso(f.id, v) })}>
+                      Distribuir igual
+                    </button>
+                  </div>
+                  <div className="flex rounded-lg overflow-hidden h-5 border border-gecotex-border">
+                    {activos.map((f, i) => {
+                      const pct = (pesosLocal[f.id] ?? '') !== '' ? parseFloat(pesosLocal[f.id]) : eq
+                      return <div key={f.id} title={`${f.nombre}: ${Math.round(pct)}%`}
+                        style={{ width: `${pct}%`, background: FACTOR_COLORS[i % FACTOR_COLORS.length], minWidth: pct > 0 ? 2 : 0 }}
+                        className="transition-all duration-300 flex items-center justify-center text-[9px] text-white font-bold">
+                        {pct >= 15 && `${Math.round(pct)}%`}
+                      </div>
+                    })}
+                  </div>
+                  {todosDefinidos && <OkBadge ok={ok} okText={`Total: ${Math.round(total)}% ✓`} errText={`Total: ${Math.round(total)}% — Deben sumar exactamente 100%`} />}
+                </div>
+              )
+            })()}
+
             <div className="space-y-2">
               {factores.filter(f => f.area === 4).length === 0 && (
                 <p className="text-xs text-gecotex-ink-muted italic text-center py-6">Sin factores configurados</p>
@@ -973,12 +1117,26 @@ export default function ConfigBonus() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3 p-3">
+                    <div className="flex items-center gap-2 p-3">
                       <div className="flex-1 min-w-0">
                         <p className={clsx('text-[13px] font-medium text-gecotex-ink', !f.activo && 'line-through text-gecotex-ink-muted')}>{f.nombre}</p>
-                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-2">{f.nota_contexto}</p>}
+                        {f.nota_contexto && <p className="text-[11px] text-gecotex-ink-sub mt-0.5 line-clamp-1">{f.nota_contexto}</p>}
                         {!f.activo && <span className="text-[10px] text-gray-400 italic">Inactivo</span>}
                       </div>
+                      {f.activo && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {savingPesoId === f.id
+                            ? <Loader2 size={13} className="animate-spin text-gecotex-primary" />
+                            : <input type="number" min={0} max={100} step={5}
+                                className="input-field text-xs py-1 w-16 text-center"
+                                placeholder="—"
+                                value={pesosLocal[f.id] ?? ''}
+                                onChange={e => setPesosLocal(p => ({ ...p, [f.id]: e.target.value }))}
+                                onBlur={e => handleSavePeso(f.id, e.target.value)} />
+                          }
+                          <span className="text-[10px] text-gecotex-ink-muted">%</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button type="button"
                           onClick={() => setEditFactor({ id: f.id, data: { nombre: f.nombre, descripcion: f.descripcion || '', nota_contexto: f.nota_contexto || '' } })}
