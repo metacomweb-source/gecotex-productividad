@@ -50,7 +50,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth, usuarios, expedientes, sesiones, tipos_dua, incrementadores, objetivos, kpis, bonus, importacion, informes, notificaciones, configuracion, dashboard, clientes
+from routers import auth, usuarios, expedientes, sesiones, tipos_dua, incrementadores, objetivos, kpis, bonus, importacion, informes, notificaciones, configuracion, dashboard, clientes, empleados_dashboard
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(usuarios.router, prefix="/api/v1")
@@ -67,6 +67,7 @@ app.include_router(notificaciones.router, prefix="/api/v1")
 app.include_router(configuracion.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(clientes.router, prefix="/api/v1")
+app.include_router(empleados_dashboard.router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -165,6 +165,18 @@ export const clientesApi = {
   desactivar: (id)    => api.delete(`/clientes/${id}`),
 }
 
+// Dashboard por empleado
+export const empleadosDashboardApi = {
+  listaOperarios:  ()     => api.get('/empleados/lista-operarios'),
+  pipeline:        (id, p) => api.get(`/empleados/${id}/pipeline`, { params: p }),
+  pipelineFase:    (id, fase, p) => api.get(`/empleados/${id}/pipeline/${fase}`, { params: p }),
+  kpisMes:         (id, p) => api.get(`/empleados/${id}/kpis-mes`, { params: p }),
+  upsDiarias:      (id, p) => api.get(`/empleados/${id}/ups-diarias`, { params: p }),
+  comparativa:     (id, p) => api.get(`/empleados/${id}/comparativa-equipo`, { params: p }),
+  expedientes:     (id, p) => api.get(`/empleados/${id}/expedientes`, { params: p }),
+  cronometro:      (id)   => api.get(`/empleados/${id}/cronometro-activo`),
+}
+
 // Dashboard equipo
 export const dashboardApi = {
   kpisGlobales:       (p) => api.get('/dashboard/kpis-globales', { params: p }),

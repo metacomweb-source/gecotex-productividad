@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { kpisApi, dashboardApi } from '../api/client'
+import DashboardEmpleado from './DashboardEmpleado'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -146,7 +147,12 @@ const MiniKpiCard = ({ titulo, valor, sub, icon: Icon, color = 'navy', alerta })
 
 export default function DashboardEquipo() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const now = new Date()
+
+  // Tab: 'equipo' | 'empleado'
+  const [tab, setTab] = useState(searchParams.get('tab') === 'empleado' ? 'empleado' : 'equipo')
+  const switchTab = (t) => { setTab(t); setSearchParams(t === 'empleado' ? { tab: 'empleado' } : {}) }
 
   // Filtros
   const [año, setAño]   = useState(now.getFullYear())
@@ -266,9 +272,11 @@ export default function DashboardEquipo() {
       {/* ── Cabecera con filtros ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gecotex-ink tracking-tight">Dashboard del equipo</h1>
+          <h1 className="text-2xl font-bold text-gecotex-ink tracking-tight">
+            {tab === 'empleado' ? 'Dashboard por empleado' : 'Dashboard del equipo'}
+          </h1>
           <p className="text-[13px] text-gecotex-ink-sub">
-            Rendimiento global · {nombreMes(mes)} {año}
+            {tab === 'empleado' ? 'Vista individual' : 'Rendimiento global'} · {nombreMes(mes)} {año}
             {sede ? ` · ${SEDES.find(s => s.value === sede)?.label}` : ''}
           </p>
         </div>
@@ -320,6 +328,32 @@ export default function DashboardEquipo() {
         </div>
       </div>
 
+      {/* ── Tab switcher ────────────────────────────────────────────────── */}
+      <div className="flex gap-1 bg-gecotex-bg border border-gecotex-border rounded-xl p-1 self-start w-fit">
+        {[
+          { key: 'equipo',   label: '👥 Equipo' },
+          { key: 'empleado', label: '👤 Por empleado' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => switchTab(key)}
+            className={clsx(
+              'px-4 py-1.5 rounded-lg text-sm font-semibold transition-all',
+              tab === key
+                ? 'bg-white text-gecotex-navy shadow-sm'
+                : 'text-gecotex-ink-sub hover:text-gecotex-ink'
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Vista por empleado ──────────────────────────────────────────── */}
+      {tab === 'empleado' && <DashboardEmpleado año={año} mes={mes} />}
+
+      {/* ── B1: KPIs globales (solo tab equipo) ─────────────────────────── */}
+      {tab === 'equipo' && <>
       {/* ── B1: KPIs globales ───────────────────────────────────────────── */}
       {loading1 ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -862,6 +896,8 @@ export default function DashboardEquipo() {
           )}
         </div>
       )}
+      </>}
+
     </div>
   )
 }
