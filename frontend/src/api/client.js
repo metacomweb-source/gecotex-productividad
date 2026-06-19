@@ -52,6 +52,8 @@ export const expedientesApi = {
   },
   descargarDocumento: (id) => api.get(`/expedientes/${id}/documento`, { responseType: 'blob' }),
   eliminarDocumento: (id) => api.delete(`/expedientes/${id}/documento`),
+  rapido: (data) => api.post('/expedientes/rapido', data),
+  incompletos: () => api.get('/expedientes/incompletos'),
 }
 
 // Sesiones
@@ -175,6 +177,20 @@ export const empleadosDashboardApi = {
   comparativa:     (id, p) => api.get(`/empleados/${id}/comparativa-equipo`, { params: p }),
   expedientes:     (id, p) => api.get(`/empleados/${id}/expedientes`, { params: p }),
   cronometro:      (id)   => api.get(`/empleados/${id}/cronometro-activo`),
+}
+
+// Cola de trabajo
+export const colaApi = {
+  listar:         (params) => api.get('/cola', { params }),
+  mia:            ()       => api.get('/cola/mia'),
+  pendientesCount:()       => api.get('/cola/pendientes-count'),
+  crear:          (data)   => api.post('/cola', data),
+  actualizar:     (id, d)  => api.put(`/cola/${id}`, d),
+  eliminar:       (id)     => api.delete(`/cola/${id}`),
+  asignar:        (id, d)  => api.patch(`/cola/${id}/asignar`, d),
+  tomar:          (id)     => api.patch(`/cola/${id}/tomar`, {}),
+  estado:         (id, d)  => api.patch(`/cola/${id}/estado`, d),
+  reordenar:      (items)  => api.post('/cola/reordenar', { items }),
 }
 
 // Dashboard equipo

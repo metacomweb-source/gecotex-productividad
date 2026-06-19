@@ -21,6 +21,7 @@ class TipoTraficoCampoEnum(str, enum.Enum):
 class OrigenEnum(str, enum.Enum):
     manual = "manual"
     importacion_excel = "importacion_excel"
+    registro_rapido = "registro_rapido"
 
 
 class Expediente(Base):

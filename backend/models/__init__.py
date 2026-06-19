@@ -12,6 +12,7 @@ from models.config_bonus_global import ConfigBonusGlobal, DEFAULT_TRAMOS, DEFAUL
 from models.factores_evaluacion import FactorEvaluacion
 from models.evaluaciones_bonus import EvaluacionBonus, EstadoEvaluacionEnum
 from models.respuestas_factores import RespuestaFactor
+from models.cola_trabajo import ColaTrabajo, PrioridadColaEnum, EstadoColaEnum
 
 __all__ = [
     "Usuario", "RolEnum", "DepartamentoEnum",
@@ -28,4 +29,5 @@ __all__ = [
     "FactorEvaluacion",
     "EvaluacionBonus", "EstadoEvaluacionEnum",
     "RespuestaFactor",
+    "ColaTrabajo", "PrioridadColaEnum", "EstadoColaEnum",
 ]

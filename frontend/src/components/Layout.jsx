@@ -6,7 +6,8 @@ import Cronometro from './Cronometro'
 import {
   LayoutDashboard, FileText, Users, Target, Award, Upload,
   Settings, ChevronLeft, ChevronRight, Bell, LogOut,
-  BarChart3, Database, Timer, ClipboardCheck, SlidersHorizontal, Building2
+  BarChart3, Database, Timer, ClipboardCheck, SlidersHorizontal, Building2,
+  ListTodo, ClipboardList,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -42,6 +43,8 @@ export default function Layout({ children }) {
     'configuracion': { name: 'Configuración', desc: 'Parámetros generales del sistema GECOTEX' },
     'clientes': { name: 'Clientes', desc: 'Catálogo de clientes para los expedientes aduaneros' },
     'config-bonus': { name: 'Configuración de bonus', desc: 'Parámetros de evaluación semestral: áreas, tramos y factores' },
+    'cola': { name: 'Cola de trabajo', desc: 'Gestión priorizada del trabajo del equipo' },
+    'mi-cola': { name: 'Mi cola', desc: 'Tareas asignadas y trabajo pendiente' },
   }
 
   const currentSection = pathParts[0] || 'dashboard'
@@ -73,9 +76,11 @@ export default function Layout({ children }) {
           {!collapsed && <div className="text-[10px] font-semibold text-white/40 tracking-[.18em] px-2.5 pt-2 pb-1.5 uppercase">NAVEGACIÓN</div>}
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Mi productividad" collapsed={collapsed} />
           <NavItem to="/expedientes" icon={FileText} label="Expedientes" collapsed={collapsed} />
+          <NavItem to="/mi-cola" icon={ClipboardList} label="Mi cola" collapsed={collapsed} />
           {isCoordinador && (
             <>
               <NavItem to="/equipo" icon={Users} label="Dashboard" collapsed={collapsed} />
+              <NavItem to="/cola" icon={ListTodo} label="Cola de trabajo" collapsed={collapsed} />
               <NavItem to="/objetivos" icon={Target} label="Objetivos" collapsed={collapsed} />
               <NavItem to="/clientes" icon={Building2} label="Clientes" collapsed={collapsed} />
               <NavItem to="/tabla-maestra" icon={Database} label="DUAs y tarifas" collapsed={collapsed} />

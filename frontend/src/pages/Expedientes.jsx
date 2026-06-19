@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { expedientesApi, informesApi, clientesApi, usuariosApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import { RegistroRapidoContext } from '../App'
 import Semaforo from '../components/Semaforo'
-import { Plus, Search, Download, Filter, RefreshCw } from 'lucide-react'
+import { Plus, Search, Download, Filter, RefreshCw, Zap } from 'lucide-react'
 import { fmtUP, fmtFechaHora, nombreMes, descargarBlob } from '../utils/formatters'
 import toast from 'react-hot-toast'
 
@@ -13,6 +14,7 @@ export default function Expedientes() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { isCoordinador, isAdmin } = useAuth()
+  const setShowRegistroRapido = useContext(RegistroRapidoContext)
   const now = new Date()
   const [expedientes, setExpedientes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +73,9 @@ export default function Expedientes() {
         <div className="flex gap-2">
           <button onClick={handleExport} className="btn-secondary flex items-center gap-2 text-sm">
             <Download size={15} /> Excel
+          </button>
+          <button onClick={() => setShowRegistroRapido && setShowRegistroRapido(true)} className="btn-secondary flex items-center gap-2 text-sm">
+            <Zap size={15} /> Registro rápido
           </button>
           <button onClick={() => navigate('/expedientes/nuevo')} className="btn-primary flex items-center gap-2 text-sm">
             <Plus size={15} /> Nuevo expediente
@@ -149,7 +154,12 @@ export default function Expedientes() {
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => navigate(`/expedientes/${exp.id}`)}
                 >
-                  <td className="table-cell font-mono text-xs font-medium text-gecotex-primary">{exp.numero_expediente}</td>
+                  <td className="table-cell font-mono text-xs font-medium text-gecotex-primary">
+                    {exp.numero_expediente}
+                    {exp.origen === 'registro_rapido' && !exp.fecha_levante && (
+                      <span className="ml-1.5 inline-flex px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 rounded align-middle">Incompleto</span>
+                    )}
+                  </td>
                   <td className="table-cell max-w-36 truncate">{exp.cliente_nombre}</td>
                   <td className="table-cell text-xs">{exp.tipo_dua_nombre}</td>
                   <td className="table-cell"><Semaforo valor={exp.canal_respuesta} tipo="canal" /></td>

@@ -21,6 +21,8 @@ async def lifespan(app: FastAPI):
     patch_factores()
     from patch_objetivos import patch as patch_objetivos
     patch_objetivos()
+    from patch_cola import patch as patch_cola
+    patch_cola()
     yield
 
 
@@ -50,7 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth, usuarios, expedientes, sesiones, tipos_dua, incrementadores, objetivos, kpis, bonus, importacion, informes, notificaciones, configuracion, dashboard, clientes, empleados_dashboard
+from routers import auth, usuarios, expedientes, sesiones, tipos_dua, incrementadores, objetivos, kpis, bonus, importacion, informes, notificaciones, configuracion, dashboard, clientes, empleados_dashboard, cola
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(usuarios.router, prefix="/api/v1")
@@ -68,6 +70,7 @@ app.include_router(configuracion.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(clientes.router, prefix="/api/v1")
 app.include_router(empleados_dashboard.router, prefix="/api/v1")
+app.include_router(cola.router, prefix="/api/v1")
 
 
 @app.get("/")

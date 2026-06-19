@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback, Fragment } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { kpisApi, dashboardApi } from '../api/client'
+import { kpisApi, dashboardApi, colaApi } from '../api/client'
 import DashboardEmpleado from './DashboardEmpleado'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -10,7 +10,7 @@ import {
   Users, TrendingUp, Package, Award, Clock, AlertTriangle,
   ArrowUp, ArrowDown, MoveRight, Download, Printer,
   ChevronDown, ChevronRight, RefreshCw, Activity,
-  CheckCircle, XCircle, Zap,
+  CheckCircle, XCircle, Zap, ListTodo,
 } from 'lucide-react'
 import { fmtUP, fmtK, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
@@ -219,6 +219,12 @@ export default function DashboardEquipo() {
     }).catch(console.error).finally(() => setLoading3(false))
   }, [params])
 
+  // Cola sin asignar
+  const [colaSinAsignar, setColaSinAsignar] = useState(0)
+  useEffect(() => {
+    colaApi.pendientesCount().then(r => setColaSinAsignar(r.data?.sin_asignar || 0)).catch(() => {})
+  }, [params])
+
   // Expedientes en curso + auto-refresh 5 min
   const cargarEnCurso = useCallback(() => {
     dashboardApi.expedientesEnCurso({ sede: sede || undefined })
@@ -403,7 +409,7 @@ export default function DashboardEquipo() {
             />
           </div>
           {/* Fila 2 */}
-          <div className="lg:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="lg:col-span-12 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             <MiniKpiCard
               titulo="En facturación"
               valor={kpis.expedientes_en_facturacion ?? '—'}
@@ -431,6 +437,15 @@ export default function DashboardEquipo() {
               sub="Días hábiles transcurridos"
               icon={Award} color="blue"
             />
+            <div className="cursor-pointer" onClick={() => window.location.href = '/cola'}>
+              <MiniKpiCard
+                titulo="Cola sin asignar"
+                valor={colaSinAsignar}
+                sub="Tareas pendientes de asignar"
+                icon={ListTodo}
+                color={colaSinAsignar > 5 ? 'orange' : colaSinAsignar > 0 ? 'navy' : 'green'}
+              />
+            </div>
           </div>
         </div>
       )}

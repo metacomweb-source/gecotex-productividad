@@ -11,7 +11,7 @@ from models.usuario import Usuario, RolEnum
 from models.tipo_dua import TipoDua
 from models.incrementador import Incrementador
 from models.cliente import Cliente
-from schemas.expediente import ExpedienteCreate, ExpedienteUpdate, ExpedienteResponse
+from schemas.expediente import ExpedienteCreate, ExpedienteUpdate, ExpedienteResponse, ExpedienteRapidoCreate
 from services.calculo_up import calcular_up, calcular_partidas_adicionales, calcular_valor_facturacion
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
@@ -136,6 +136,88 @@ def crear_expediente(
     return result
 
 
+@router.post("/rapido", response_model=ExpedienteResponse, status_code=status.HTTP_201_CREATED)
+def crear_expediente_rapido(
+    data: ExpedienteRapidoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    from datetime import datetime
+    from uuid import uuid4
+    from models.expediente import OrigenEnum, CanalEnum
+
+    numero = data.numero_expediente_tari
+    if not numero:
+        numero = f"RPDO-{datetime.now().strftime('%Y%m%d%H%M')}-{uuid4().hex[:4].upper()}"
+
+    if db.query(Expediente).filter(Expediente.numero_expediente == numero).first():
+        numero = f"RPDO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6].upper()}"
+
+    tipo_dua = None
+    if data.tipo_dua_id:
+        tipo_dua = db.query(TipoDua).filter(TipoDua.id == data.tipo_dua_id).first()
+
+    incrementadores_list = []
+    if data.servicios_adicionales:
+        incrementadores_list = db.query(Incrementador).filter(Incrementador.id.in_(data.servicios_adicionales)).all()
+
+    up = calcular_up(tipo_dua, data.num_partidas, incrementadores_list) if tipo_dua else None
+    valor = calcular_valor_facturacion(tipo_dua, data.num_partidas, incrementadores_list) if tipo_dua else None
+    partidas_adic = calcular_partidas_adicionales(tipo_dua, data.num_partidas) if tipo_dua else 0
+
+    cliente_nombre = data.cliente_nombre
+    if data.cliente_id:
+        cli = db.query(Cliente).filter(Cliente.id == data.cliente_id, Cliente.activo == True).first()
+        if cli:
+            cliente_nombre = cli.nombre
+
+    exp = Expediente(
+        numero_expediente=numero,
+        operario_id=current_user.id,
+        tipo_dua_id=data.tipo_dua_id or 1,
+        cliente_id=data.cliente_id,
+        cliente_nombre=cliente_nombre,
+        tipo_trafico=data.tipo_trafico,
+        num_partidas=data.num_partidas,
+        canal_respuesta=CanalEnum.pendiente,
+        fecha_apertura_dossier=datetime.now(),
+        servicios_adicionales=data.servicios_adicionales,
+        partidas_adicionales_count=partidas_adic,
+        up_calculadas=up,
+        valor_facturacion=valor,
+        origen=OrigenEnum.registro_rapido,
+    )
+    db.add(exp)
+    db.commit()
+    db.refresh(exp)
+    result = ExpedienteResponse.model_validate(exp)
+    result.operario_nombre = f"{exp.operario.nombre} {exp.operario.apellidos}" if exp.operario else ""
+    result.tipo_dua_nombre = exp.tipo_dua.nombre if exp.tipo_dua else ""
+    return result
+
+
+@router.get("/incompletos", response_model=List[ExpedienteResponse])
+def listar_incompletos(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    from models.expediente import OrigenEnum
+    q = db.query(Expediente).filter(
+        Expediente.origen == OrigenEnum.registro_rapido,
+        Expediente.fecha_levante.is_(None),
+    )
+    if current_user.rol == RolEnum.operario:
+        q = q.filter(Expediente.operario_id == current_user.id)
+    expedientes = q.order_by(Expediente.created_at.desc()).limit(50).all()
+    result = []
+    for e in expedientes:
+        data = ExpedienteResponse.model_validate(e)
+        data.operario_nombre = f"{e.operario.nombre} {e.operario.apellidos}" if e.operario else ""
+        data.tipo_dua_nombre = e.tipo_dua.nombre if e.tipo_dua else ""
+        result.append(data)
+    return result
+
+
 @router.get("/{expediente_id}", response_model=ExpedienteResponse)
 def obtener_expediente(
     expediente_id: int,
@@ -174,6 +256,8 @@ def actualizar_expediente(
         if cli:
             update_data["cliente_nombre"] = cli.nombre
 
+    old_facturacion = exp.fecha_envio_facturacion
+
     for key, value in update_data.items():
         setattr(exp, key, value)
 
@@ -186,6 +270,21 @@ def actualizar_expediente(
             exp.valor_facturacion = calcular_valor_facturacion(tipo_dua, exp.num_partidas, incrementadores)
 
     db.commit()
+
+    # auto-completar item de cola si se acaba de registrar fecha_envio_facturacion
+    if old_facturacion is None and exp.fecha_envio_facturacion is not None:
+        try:
+            from models.cola_trabajo import ColaTrabajo, EstadoColaEnum
+            cola_item = db.query(ColaTrabajo).filter(
+                ColaTrabajo.expediente_id == expediente_id,
+                ColaTrabajo.estado != EstadoColaEnum.cancelado,
+            ).first()
+            if cola_item:
+                cola_item.estado = EstadoColaEnum.completado
+                db.commit()
+        except Exception:
+            pass
+
     db.refresh(exp)
     result = ExpedienteResponse.model_validate(exp)
     result.operario_nombre = f"{exp.operario.nombre} {exp.operario.apellidos}" if exp.operario else ""

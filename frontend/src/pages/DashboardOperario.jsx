@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCronometro } from '../context/CronometroContext'
-import { kpisApi, expedientesApi, bonusApi } from '../api/client'
+import { kpisApi, expedientesApi, bonusApi, colaApi } from '../api/client'
 import KpiCard from '../components/KpiCard'
 import Semaforo from '../components/Semaforo'
 import TarjetaHoy from '../components/TarjetaHoy'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts'
-import { FileText, Plus, Sparkles, Award, Package, Clock, Pause, StopCircle, Search, Filter, ChevronRight, Timer, ChevronDown, ClipboardCheck } from 'lucide-react'
+import { FileText, Plus, Sparkles, Award, Package, Clock, Pause, StopCircle, Search, Filter, ChevronRight, Timer, ChevronDown, ClipboardCheck, ClipboardList } from 'lucide-react'
 import { fmtUP, fmtK, fmtPct, fmtFechaHora, nombreMes } from '../utils/formatters'
 import clsx from 'clsx'
 import { useCelebraciones } from '../hooks/useCelebraciones'
@@ -48,6 +48,7 @@ export default function DashboardOperario() {
   const [loading, setLoading] = useState(true)
   const [miEval, setMiEval] = useState(null)
   const [celebradoMes, setCelebradoMes] = useState(false)
+  const [colaCount, setColaCount] = useState(null)
 
   useEffect(() => {
     if (!usuario) return
@@ -69,6 +70,7 @@ export default function DashboardOperario() {
       .catch(console.error)
       .finally(() => setLoading(false))
     bonusApi.miEvaluacion().then(r => setMiEval(r.data)).catch(() => setMiEval(null))
+    colaApi.pendientesCount().then(r => setColaCount(r.data)).catch(() => {})
   }, [usuario, año, mes])
 
   const chartData = (() => {
@@ -112,6 +114,20 @@ export default function DashboardOperario() {
     <div className="space-y-8 animate-fade-in pb-10">
       {/* Tarjeta Hoy */}
       <TarjetaHoy usuarioId={usuario?.id} nombreUsuario={usuario?.nombre} />
+
+      {/* Cola pendiente */}
+      {colaCount?.mias > 0 && (
+        <div className="cursor-pointer" onClick={() => navigate('/mi-cola')}>
+          <KpiCard
+            titulo="Tareas pendientes"
+            valor={colaCount.mias}
+            unit="tareas"
+            icono={ClipboardList}
+            color="naranja"
+            footer="Ver mi cola →"
+          />
+        </div>
+      )}
 
       {/* Welcome + Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

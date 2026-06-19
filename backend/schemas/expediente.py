@@ -42,6 +42,16 @@ class ExpedienteUpdate(BaseModel):
     operario_id: Optional[int] = None
 
 
+class ExpedienteRapidoCreate(BaseModel):
+    tipo_trafico: TipoTraficoCampoEnum
+    tipo_dua_id: Optional[int] = None
+    cliente_id: Optional[int] = None
+    cliente_nombre: str
+    num_partidas: int = 1
+    servicios_adicionales: List[int] = []
+    numero_expediente_tari: Optional[str] = None
+
+
 class ExpedienteResponse(ExpedienteBase):
     id: int
     operario_id: int
