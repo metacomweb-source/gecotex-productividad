@@ -11,7 +11,7 @@ import {
   ListTodo, LayoutGrid, Table2, Plus, GripVertical, Clock, User,
   AlertTriangle, Pencil, Trash2, X, Check, ChevronDown,
 } from 'lucide-react'
-import { colaApi, usuariosApi } from '../api/client'
+import { colaApi, empleadosDashboardApi } from '../api/client'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -244,12 +244,12 @@ export default function ColaCoordinador() {
 
   const cargar = useCallback(async () => {
     try {
-      const [cola, usuarios] = await Promise.all([
+      const [cola, operariosData] = await Promise.all([
         colaApi.listar(),
-        usuariosApi.listar(),
+        empleadosDashboardApi.listaOperarios(),
       ])
       setItems(cola.data)
-      setOperarios(usuarios.data.filter(u => u.rol === 'operario' && u.activo))
+      setOperarios(operariosData.data)
     } catch {
       toast.error('Error cargando la cola')
     } finally {
